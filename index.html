@@ -5,153 +5,267 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registro de Artículos - Sistema de Revisión por Pares</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4a90e2">
 </head>
 <body>
     <div class="container">
         <header class="header">
             <h1>Sistema de Revisión por Pares</h1>
+            <div id="connectionStatus" class="connection-status">
+                Conectado
+            </div>
             <p>Registro de Nuevos Artículos</p>
         </header>
 
         <main class="main-content">
-            <section class="form-section">
-                <h2>Registrar Nuevo Artículo</h2>
-                <form id="articleForm" class="article-form">
-                    <div class="form-group">
-                        <label for="title">Título del Artículo *</label>
-                        <input 
-                            type="text" 
-                            id="title" 
-                            name="title" 
-                            class="form-control" 
-                            placeholder="Ingrese el título del artículo"
-                            required
-                        >
-                        <span class="error-message" id="titleError">El título es obligatorio</span>
-                    </div>
+            <!-- Tabs para navegación -->
+            <div class="tabs-container">
+                <div class="tabs">
+                    <button class="tab-btn active" data-tab="articles">📝 Artículos</button>
+                    <button class="tab-btn" data-tab="reviewers">👥 Revisores</button>
+                </div>
+            </div>
 
-                    <div class="form-group">
-                        <label for="summary">Resumen *</label>
-                        <textarea 
-                            id="summary" 
-                            name="summary" 
-                            class="form-control" 
-                            rows="6" 
-                            placeholder="Ingrese un resumen del artículo (mínimo 50 caracteres)"
-                            required
-                        ></textarea>
-                        <span class="error-message" id="summaryError">El resumen es obligatorio y debe tener al menos 50 caracteres</span>
-                        <div class="char-count">
-                            <span id="charCount">0</span> / 50 caracteres mínimos
+            <!-- Contenido de Artículos -->
+            <div id="articlesTab" class="tab-content active">
+                <section class="form-section">
+                    <h2>Registrar Nuevo Artículo</h2>
+                    <form id="articleForm" class="article-form">
+                        <div class="form-group">
+                            <label for="title">Título del Artículo *</label>
+                            <input 
+                                type="text" 
+                                id="title" 
+                                name="title" 
+                                class="form-control" 
+                                placeholder="Ingrese el título del artículo"
+                                required
+                            >
+                            <span class="error-message" id="titleError">El título es obligatorio</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="summary">Resumen *</label>
+                            <textarea 
+                                id="summary" 
+                                name="summary" 
+                                class="form-control" 
+                                rows="6" 
+                                placeholder="Ingrese un resumen del artículo (mínimo 50 caracteres)"
+                                required
+                            ></textarea>
+                            <span class="error-message" id="summaryError">El resumen es obligatorio y debe tener al menos 50 caracteres</span>
+                            <div class="char-count">
+                                <span id="charCount">0</span> / 50 caracteres mínimos
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="author">Autor Principal *</label>
+                            <input 
+                                type="text" 
+                                id="author" 
+                                name="author" 
+                                class="form-control" 
+                                placeholder="Ingrese el nombre del autor principal"
+                                required
+                            >
+                            <span class="error-message" id="authorError">El autor es obligatorio</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="email">Correo Electrónico *</label>
+                            <input 
+                                type="email" 
+                                id="email" 
+                                name="email" 
+                                class="form-control" 
+                                placeholder="autor@ejemplo.com"
+                                required
+                            >
+                            <span class="error-message" id="emailError">Ingrese un correo electrónico válido por favor</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="keywords">Palabras Clave</label>
+                            <input 
+                                type="text" 
+                                id="keywords" 
+                                name="keywords" 
+                                class="form-control" 
+                                placeholder="Separadas por comas (ej: investigación, tecnología, educación)"
+                            >
+                            <small class="form-help">Separe las palabras clave con comas</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="category">Categoría</label>
+                            <select id="category" name="category" class="form-control">
+                                <option value="">Seleccione una categoría</option>
+                                <option value="ciencias">Ciencias</option>
+                                <option value="tecnologia">Tecnología</option>
+                                <option value="educacion">Educación</option>
+                                <option value="medicina">Medicina</option>
+                                <option value="ingenieria">Ingeniería</option>
+                                <option value="sociales">Ciencias Sociales</option>
+                                <option value="artes">Artes y Humanidades</option>
+                                <option value="otro">Otro</option>
+                            </select>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" id="submitBtn" class="btn btn-primary" disabled>
+                                <span class="btn-text">Registrar Artículo</span>
+                                <span class="btn-loading" style="display: none;">Enviando...</span>
+                            </button>
+                            <button type="reset" class="btn btn-secondary">
+                                Limpiar Formulario
+                            </button>
+                        </div>
+                    </form>
+                </section>
+
+                <section id="successMessage" class="success-message" style="display: none;">
+                    <div class="success-content">
+                        <h3>¡Artículo Registrado Exitosamente!</h3>
+                        <p>Su artículo ha sido registrado y está listo para el proceso de revisión por pares.</p>
+                        <button class="btn btn-primary" id="newArticleBtn">Registrar Nuevo Artículo</button>
+                    </div>
+                </section>
+
+                <section class="articles-section">
+                    <h2>Artículos Registrados</h2>
+                    <div class="articles-controls">
+                        <div class="search-box">
+                            <input type="text" id="searchInput" placeholder="Buscar artículos por título, autor o palabras clave..." class="form-control">
+                        </div>
+                        <div class="filter-box">
+                            <select id="categoryFilter" class="form-control">
+                                <option value="">Todas las categorías</option>
+                                <option value="ciencias">Ciencias</option>
+                                <option value="tecnologia">Tecnología</option>
+                                <option value="educacion">Educación</option>
+                                <option value="medicina">Medicina</option>
+                                <option value="ingenieria">Ingeniería</option>
+                                <option value="sociales">Ciencias Sociales</option>
+                                <option value="artes">Artes y Humanidades</option>
+                                <option value="otro">Otro</option>
+                            </select>
                         </div>
                     </div>
+                    <div class="articles-count">
+                        <span id="articlesCount">0</span> artículos encontrados
+                    </div>
+                    <div id="articlesTable" class="articles-table">
+                        <div class="no-articles">
+                            <p>No hay artículos registrados aún. Registra tu primer artículo para comenzar.</p>
+                        </div>
+                    </div>
+                </section>
+            </div>
 
-                    <div class="form-group">
-                        <label for="author">Autor Principal *</label>
-                        <input 
-                            type="text" 
-                            id="author" 
-                            name="author" 
-                            class="form-control" 
-                            placeholder="Ingrese el nombre del autor principal"
-                            required
-                        >
-                        <span class="error-message" id="authorError">El autor es obligatorio</span>
-                    </div>
+            <!-- Contenido de Revisores -->
+            <div id="reviewersTab" class="tab-content">
+                <section class="form-section">
+                    <h2>Registrar Nuevo Revisor</h2>
+                    <form id="reviewerForm" class="reviewer-form">
+                        <div class="form-group">
+                            <label for="reviewerName">Nombre Completo *</label>
+                            <input 
+                                type="text" 
+                                id="reviewerName" 
+                                name="reviewerName" 
+                                class="form-control" 
+                                placeholder="Ingrese el nombre completo del revisor"
+                                required
+                            >
+                            <span class="error-message" id="reviewerNameError">El nombre es obligatorio</span>
+                        </div>
 
-                    <div class="form-group">
-                        <label for="email">Correo Electrónico *</label>
-                        <input 
-                            type="email" 
-                            id="email" 
-                            name="email" 
-                            class="form-control" 
-                            placeholder="autor@ejemplo.com"
-                            required
-                        >
-                        <span class="error-message" id="emailError">Ingrese un correo electrónico válido por favor</span>
-                    </div>
+                        <div class="form-group">
+                            <label for="reviewerEmail">Correo Electrónico *</label>
+                            <input 
+                                type="email" 
+                                id="reviewerEmail" 
+                                name="reviewerEmail" 
+                                class="form-control" 
+                                placeholder="revisor@ejemplo.com"
+                                required
+                            >
+                            <span class="error-message" id="reviewerEmailError">Ingrese un correo electrónico válido</span>
+                        </div>
 
-                    <div class="form-group">
-                        <label for="keywords">Palabras Clave</label>
-                        <input 
-                            type="text" 
-                            id="keywords" 
-                            name="keywords" 
-                            class="form-control" 
-                            placeholder="Separadas por comas (ej: investigación, tecnología, educación)"
-                        >
-                        <small class="form-help">Separe las palabras clave con comas</small>
-                    </div>
+                        <div class="form-group">
+                            <label for="reviewerExpertise">Área de Expertise *</label>
+                            <select id="reviewerExpertise" name="reviewerExpertise" class="form-control" required>
+                                <option value="">Seleccione un área de expertise</option>
+                                <option value="ciencias">Ciencias</option>
+                                <option value="tecnologia">Tecnología</option>
+                                <option value="educacion">Educación</option>
+                                <option value="medicina">Medicina</option>
+                                <option value="ingenieria">Ingeniería</option>
+                                <option value="sociales">Ciencias Sociales</option>
+                                <option value="artes">Artes y Humanidades</option>
+                                <option value="multidisciplinario">Multidisciplinario</option>
+                            </select>
+                            <span class="error-message" id="reviewerExpertiseError">Seleccione un área de expertise</span>
+                        </div>
 
-                    <div class="form-group">
-                        <label for="category">Categoría</label>
-                        <select id="category" name="category" class="form-control">
-                            <option value="">Seleccione una categoría</option>
-                            <option value="ciencias">Ciencias</option>
-                            <option value="tecnologia">Tecnología</option>
-                            <option value="educacion">Educación</option>
-                            <option value="medicina">Medicina</option>
-                            <option value="ingenieria">Ingeniería</option>
-                            <option value="sociales">Ciencias Sociales</option>
-                            <option value="artes">Artes y Humanidades</option>
-                            <option value="otro">Otro</option>
-                        </select>
-                    </div>
+                        <div class="form-actions">
+                            <button type="submit" id="submitReviewerBtn" class="btn btn-primary" disabled>
+                                <span class="btn-text">Registrar Revisor</span>
+                                <span class="btn-loading" style="display: none;">Registrando...</span>
+                            </button>
+                            <button type="reset" class="btn btn-secondary">
+                                Limpiar Formulario
+                            </button>
+                        </div>
+                    </form>
+                </section>
 
-                    <div class="form-actions">
-                        <button type="submit" id="submitBtn" class="btn btn-primary" disabled>
-                            <span class="btn-text">Registrar Artículo</span>
-                            <span class="btn-loading" style="display: none;">Enviando...</span>
-                        </button>
-                        <button type="reset" class="btn btn-secondary">
-                            Limpiar Formulario
-                        </button>
+                <section id="reviewerSuccessMessage" class="success-message" style="display: none;">
+                    <div class="success-content">
+                        <h3>¡Revisor Registrado Exitosamente!</h3>
+                        <p>El revisor ha sido registrado y está disponible para el proceso de revisión por pares.</p>
+                        <button class="btn btn-primary" id="newReviewerBtn">Registrar Nuevo Revisor</button>
                     </div>
-                </form>
-            </section>
+                </section>
 
-            <section id="successMessage" class="success-message" style="display: none;">
-                <div class="success-content">
-                    <h3>¡Artículo Registrado Exitosamente!</h3>
-                    <p>Su artículo ha sido registrado y está listo para el proceso de revisión por pares.</p>
-                    <button class="btn btn-primary" id="newArticleBtn">Registrar Nuevo Artículo</button>
-                </div>
-            </section>
-
-            <section class="articles-section">
-                <h2>Artículos Registrados</h2>
-                <div class="articles-controls">
-                    <div class="search-box">
-                        <input type="text" id="searchInput" placeholder="Buscar artículos por título, autor o palabras clave..." class="form-control">
+                <section class="reviewers-section">
+                    <h2>Revisores Registrados</h2>
+                    <div class="reviewers-controls">
+                        <div class="search-box">
+                            <input type="text" id="reviewerSearchInput" placeholder="Buscar revisores por nombre, email o expertise..." class="form-control">
+                        </div>
+                        <div class="filter-box">
+                            <select id="expertiseFilter" class="form-control">
+                                <option value="">Todas las áreas</option>
+                                <option value="ciencias">Ciencias</option>
+                                <option value="tecnologia">Tecnología</option>
+                                <option value="educacion">Educación</option>
+                                <option value="medicina">Medicina</option>
+                                <option value="ingenieria">Ingeniería</option>
+                                <option value="sociales">Ciencias Sociales</option>
+                                <option value="artes">Artes y Humanidades</option>
+                                <option value="multidisciplinario">Multidisciplinario</option>
+                            </select>
+                        </div>
                     </div>
-                    <div class="filter-box">
-                        <select id="categoryFilter" class="form-control">
-                            <option value="">Todas las categorías</option>
-                            <option value="ciencias">Ciencias</option>
-                            <option value="tecnologia">Tecnología</option>
-                            <option value="educacion">Educación</option>
-                            <option value="medicina">Medicina</option>
-                            <option value="ingenieria">Ingeniería</option>
-                            <option value="sociales">Ciencias Sociales</option>
-                            <option value="artes">Artes y Humanidades</option>
-                            <option value="otro">Otro</option>
-                        </select>
+                    <div class="reviewers-count">
+                        <span id="reviewersCount">0</span> revisores encontrados
                     </div>
-                </div>
-                <div class="articles-count">
-                    <span id="articlesCount">0</span> artículos encontrados
-                </div>
-                <div id="articlesTable" class="articles-table">
-                    <div class="no-articles">
-                        <p>No hay artículos registrados aún. Registra tu primer artículo para comenzar.</p>
+                    <div id="reviewersTable" class="reviewers-table">
+                        <div class="no-reviewers">
+                            <p>No hay revisores registrados aún. Registra tu primer revisor para comenzar.</p>
+                        </div>
                     </div>
-                </div>
-            </section>
+                </section>
+            </div>
         </main>
 
         <footer class="footer">
-            <p>&copy; 2024 Sistema de Revisión por Pares. Todos los derechos reservados.</p>
+            <p>&copy; 2026 Sistema de Revisión por Pares. Todos los derechos reservados.</p>
         </footer>
     </div>
 
