@@ -116,138 +116,153 @@ const ArticleForm = (() => {
     
     const storage = ArticleStorage;
     
-    // Sistema de Roles
-    const RoleManager = {
-        init() {
-            this.setupRoleButtons();
-            this.loadSavedRole();
-        },
-        
-        setupRoleButtons() {
-            const roleButtons = document.querySelectorAll('.role-btn');
-            roleButtons.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const role = btn.dataset.role;
-                    this.selectRole(role);
-                });
-            });
-        },
-        
-        selectRole(role) {
-            currentRole = role;
-            localStorage.setItem('userRole', role);
-            
-            // Actualizar UI de botones
-            const roleButtons = document.querySelectorAll('.role-btn');
-            roleButtons.forEach(btn => {
-                btn.classList.remove('active');
-                if (btn.dataset.role === role) {
-                    btn.classList.add('active');
-                }
-            });
-            
-            // Mostrar contenido principal
-            const roleSelection = document.querySelector('.role-selection');
-            const mainContent = document.querySelector('.main-content');
-            if (roleSelection) roleSelection.style.display = 'none';
-            if (mainContent) mainContent.style.display = 'block';
-            
-            // Configurar interfaz según rol
-            this.configureInterface(role);
-            
-            // Cargar datos después de un pequeño delay para asegurar que los elementos existan
-            setTimeout(() => {
-                initializeElements();
-                setupEventListeners();
-                updateSubmitButton();
-                networkMonitor.updateStatus();
-                loadArticlesFromStorage();
-                loadReviewersFromStorage();
-            }, 100);
-        },
-        
-        loadSavedRole() {
-            const savedRole = localStorage.getItem('userRole');
-            if (savedRole) {
-                this.selectRole(savedRole);
+    // Inicialización principal
+    const init = async () => {
+        // Test de conexión Firebase
+        if (typeof firebase !== 'undefined') {
+            console.log('🔥 Firebase disponible');
+            try {
+                // Test simple de conexión
+                const testRef = db.collection('test');
+                console.log('✅ Firebase conectado exitosamente');
+            } catch (error) {
+                console.error('❌ Error Firebase:', error);
             }
-        },
+        } else {
+            console.log('⚠️ Firebase no disponible, usando IndexedDB local');
+        }
         
-        configureInterface(role) {
-            const header = document.querySelector('.header p');
-            const tabs = document.querySelector('.tabs');
-            const articlesTab = document.getElementById('articlesTab');
-            const reviewersTab = document.getElementById('reviewersTab');
-            
-            switch(role) {
-                case 'author':
-                    if (header) header.textContent = 'Panel del Autor';
-                    // Autor solo ve artículos y puede registrar nuevos
-                    if (tabs) tabs.style.display = 'none';
-                    if (reviewersTab) reviewersTab.style.display = 'none';
-                    if (articlesTab) articlesTab.style.display = 'block';
-                    // Asegurar que el formulario y botón estén visibles para autores
+        // Configurar botones de rol inmediatamente
+        setupRoleButtons();
+        
+        // Cargar rol guardado
+        loadSavedRole();
+    };
+    
+    // Configurar botones de rol por separado
+    const setupRoleButtons = () => {
+        const roleButtons = document.querySelectorAll('.role-btn');
+        roleButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const role = btn.dataset.role;
+                selectRole(role);
+            });
+        });
+    };
+    
+    // Cargar rol guardado
+    const loadSavedRole = () => {
+        const savedRole = localStorage.getItem('userRole');
+        if (savedRole) {
+            selectRole(savedRole);
+        }
+    };
+    
+    // Seleccionar rol
+    const selectRole = (role) => {
+        currentRole = role;
+        localStorage.setItem('userRole', role);
+        
+        // Actualizar UI de botones
+        const roleButtons = document.querySelectorAll('.role-btn');
+        roleButtons.forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.dataset.role === role) {
+                btn.classList.add('active');
+            }
+        });
+        
+        // Mostrar contenido principal
+        const roleSelection = document.querySelector('.role-selection');
+        const mainContent = document.querySelector('.main-content');
+        if (roleSelection) roleSelection.style.display = 'none';
+        if (mainContent) mainContent.style.display = 'block';
+        
+        // Configurar interfaz según rol
+        configureInterface(role);
+        
+        // Cargar datos después de un pequeño delay
+        setTimeout(() => {
+            initializeElements();
+            setupEventListeners();
+            updateSubmitButton();
+            networkMonitor.updateStatus();
+            loadArticlesFromStorage();
+            loadReviewersFromStorage();
+        }, 100);
+    };
+    
+    // Configurar interfaz según rol
+    const configureInterface = (role) => {
+        const header = document.querySelector('.header p');
+        const tabs = document.querySelector('.tabs');
+        const articlesTab = document.getElementById('articlesTab');
+        const reviewersTab = document.getElementById('reviewersTab');
+        
+        switch(role) {
+            case 'author':
+                if (header) header.textContent = 'Panel del Autor';
+                // Autor solo ve artículos y puede registrar nuevos
+                if (tabs) tabs.style.display = 'none';
+                if (reviewersTab) reviewersTab.style.display = 'none';
+                if (articlesTab) articlesTab.style.display = 'block';
+                // Asegurar que el formulario y botón estén visibles para autores
+                const formSection = document.querySelector('.form-section');
+                if (formSection) {
+                    formSection.style.display = 'block';
+                }
+                const newArticleBtn = document.getElementById('newArticleBtn');
+                if (newArticleBtn) {
+                    newArticleBtn.style.display = 'block';
+                }
+                break;
+                
+            case 'editor':
+                if (header) header.textContent = 'Panel del Editor';
+                // Editor ve todo pero solo puede registrar revisores, no artículos
+                if (tabs) tabs.style.display = 'flex';
+                if (articlesTab) articlesTab.style.display = 'block';
+                if (reviewersTab) reviewersTab.style.display = 'block';
+                // Ocultar formulario de registro de artículos para editores
+                const formSectionEditor = document.querySelector('.form-section');
+                if (formSectionEditor) {
+                    formSectionEditor.style.display = 'none';
+                }
+                // Ocultar botón de nuevo artículo para editores
+                const newArticleBtnEditor = document.getElementById('newArticleBtn');
+                if (newArticleBtnEditor) {
+                    newArticleBtnEditor.style.display = 'none';
+                }
+                break;
+                
+            case 'reviewer':
+                if (header) header.textContent = 'Panel del Revisor';
+                // Revisor solo ve artículos asignados (vista especializada)
+                if (tabs) tabs.style.display = 'none';
+                if (reviewersTab) reviewersTab.style.display = 'none';
+                if (articlesTab) {
+                    articlesTab.style.display = 'block';
+                    // Ocultar formulario de registro para revisores
                     const formSection = document.querySelector('.form-section');
                     if (formSection) {
-                        formSection.style.display = 'block';
+                        formSection.style.display = 'none';
                     }
+                    // Ocultar botón de nuevo artículo
                     const newArticleBtn = document.getElementById('newArticleBtn');
                     if (newArticleBtn) {
-                        newArticleBtn.style.display = 'block';
+                        newArticleBtn.style.display = 'none';
                     }
-                    break;
-                    
-                case 'editor':
-                    if (header) header.textContent = 'Panel del Editor';
-                    // Editor ve todo pero solo puede registrar revisores, no artículos
-                    if (tabs) tabs.style.display = 'flex';
-                    if (articlesTab) articlesTab.style.display = 'block';
-                    if (reviewersTab) reviewersTab.style.display = 'block';
-                    // Ocultar formulario de registro de artículos para editores
-                    const formSectionEditor = document.querySelector('.form-section');
-                    if (formSectionEditor) {
-                        formSectionEditor.style.display = 'none';
+                    // Mostrar mensaje especial para revisores
+                    if (articlesTable) {
+                        articlesTable.innerHTML = `
+                            <div class="reviewer-welcome">
+                                <h3>📋 Artículos Asignados para Revisión</h3>
+                                <p>Aquí se muestran todos los artículos con revisor asignado.</p>
+                            </div>
+                        `;
                     }
-                    // Ocultar botón de nuevo artículo para editores
-                    const newArticleBtnEditor = document.getElementById('newArticleBtn');
-                    if (newArticleBtnEditor) {
-                        newArticleBtnEditor.style.display = 'none';
-                    }
-                    break;
-                    
-                case 'reviewer':
-                    if (header) header.textContent = 'Panel del Revisor';
-                    // Revisor solo ve artículos asignados (vista especializada)
-                    if (tabs) tabs.style.display = 'none';
-                    if (reviewersTab) reviewersTab.style.display = 'none';
-                    if (articlesTab) {
-                        articlesTab.style.display = 'block';
-                        // Ocultar formulario de registro para revisores
-                        const formSection = document.querySelector('.form-section');
-                        if (formSection) {
-                            formSection.style.display = 'none';
-                        }
-                        // Ocultar botón de nuevo artículo
-                        const newArticleBtn = document.getElementById('newArticleBtn');
-                        if (newArticleBtn) {
-                            newArticleBtn.style.display = 'none';
-                        }
-                        // Mostrar mensaje especial para revisores
-                        if (articlesTable) {
-                            articlesTable.innerHTML = `
-                                <div class="reviewer-welcome">
-                                    <h3>📋 Artículos Asignados para Revisión</h3>
-                                    <p>Aquí se muestran todos los artículos con revisor asignado.</p>
-                                </div>
-                            `;
-                        }
-                    }
-                    break;
-            }
-        },
-        
-        getCurrentRole() {
-            return currentRole;
+                }
+                break;
         }
     };
     
