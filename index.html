@@ -4,12 +4,52 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registro de Artículos - Sistema de Revisión por Pares</title>
-    <link rel="stylesheet" href="styles.css">
+    
+    <!-- SEO Meta Description -->
+    <meta name="description" content="Sistema de revisión por pares para registro y gestión de artículos académicos. Trabaja offline y sincroniza cuando hay conexión.">
+    
+    <!-- Preload critical CSS -->
+    <link rel="preload" href="styles.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="styles.css"></noscript>
+    
+    <!-- Preload critical fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4a90e2">
 </head>
 <body>
-    <div class="container">
+    <!-- Selector de Rol -->
+    <div id="roleSelector" class="role-selector">
+        <div class="role-container">
+            <h1>Sistema de Revisión por Pares</h1>
+            <p>Selecciona tu rol para continuar</p>
+            
+            <div class="role-cards">
+                <div class="role-card" data-role="author">
+                    <div class="role-icon">✍️</div>
+                    <h3>Autor</h3>
+                    <p>Subir y gestionar artículos</p>
+                </div>
+                
+                <div class="role-card" data-role="editor">
+                    <div class="role-icon">📋</div>
+                    <h3>Editor</h3>
+                    <p>Gestionar flujo editorial</p>
+                </div>
+                
+                <div class="role-card" data-role="reviewer">
+                    <div class="role-icon">👁️</div>
+                    <h3>Revisor</h3>
+                    <p>Revisar artículos asignados</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contenido Principal (Oculto inicialmente) -->
+    <div id="mainContent" class="container" style="display: none;">
         <header class="header">
             <h1>Sistema de Revisión por Pares</h1>
             <div id="connectionStatus" class="connection-status">
@@ -112,6 +152,20 @@
                                 <option value="artes">Artes y Humanidades</option>
                                 <option value="otro">Otro</option>
                             </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="document">Documento del Artículo *</label>
+                            <input 
+                                type="file" 
+                                id="document" 
+                                name="document" 
+                                class="form-control" 
+                                accept=".pdf,.doc,.docx,.txt"
+                                required
+                            >
+                            <small class="form-help">Formatos permitidos: PDF, DOC, DOCX, TXT (Máx. 10MB)</small>
+                            <span class="error-message" id="documentError">El documento es obligatorio</span>
                         </div>
 
                         <div class="form-actions">
@@ -269,6 +323,14 @@
         </footer>
     </div>
 
-    <script src="script.js"></script>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    
+    <!-- Configuración Firebase -->
+    <script src="firebase-config.js"></script>
+    
+    <!-- Script con Firebase (multiplataforma) -->
+    <script src="script-firebase.js" defer></script>
 </body>
 </html>

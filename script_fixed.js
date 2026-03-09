@@ -9,11 +9,6 @@ const ArticleForm = (() => {
     let titleInput, summaryInput, authorInput, emailInput, keywordsInput, categorySelect, documentInput;
     let titleError, summaryError, authorError, emailError, documentError, charCount;
     let searchInput, categoryFilter, articlesTable, articlesCount;
-    // Variables para formulario de revisores
-    let reviewerForm, submitReviewerBtn, reviewerSuccessMessage, newReviewerBtn;
-    let reviewerNameInput, reviewerEmailInput, reviewerExpertiseInput;
-    let reviewerNameError, reviewerEmailError, reviewerExpertiseError;
-    let reviewerSearchInput, expertiseFilter, reviewersTable, reviewersCount;
     let articles = [];
     let filteredArticles = [];
     let currentEditingId = null;
@@ -91,37 +86,18 @@ const ArticleForm = (() => {
             switch(role) {
                 case 'author':
                     if (header) header.textContent = 'Panel del Autor';
-                    // Autor solo ve artículos y puede registrar nuevos
+                    // Autor solo ve artículos
                     if (tabs) tabs.style.display = 'none';
                     if (reviewersTab) reviewersTab.style.display = 'none';
                     if (articlesTab) articlesTab.style.display = 'block';
-                    // Asegurar que el formulario y botón estén visibles para autores
-                    const formSection = document.querySelector('.form-section');
-                    if (formSection) {
-                        formSection.style.display = 'block';
-                    }
-                    const newArticleBtn = document.getElementById('newArticleBtn');
-                    if (newArticleBtn) {
-                        newArticleBtn.style.display = 'block';
-                    }
                     break;
                     
                 case 'editor':
                     if (header) header.textContent = 'Panel del Editor';
-                    // Editor ve todo pero solo puede registrar revisores, no artículos
+                    // Editor ve todo
                     if (tabs) tabs.style.display = 'flex';
                     if (articlesTab) articlesTab.style.display = 'block';
                     if (reviewersTab) reviewersTab.style.display = 'block';
-                    // Ocultar formulario de registro de artículos para editores
-                    const formSectionEditor = document.querySelector('.form-section');
-                    if (formSectionEditor) {
-                        formSectionEditor.style.display = 'none';
-                    }
-                    // Ocultar botón de nuevo artículo para editores
-                    const newArticleBtnEditor = document.getElementById('newArticleBtn');
-                    if (newArticleBtnEditor) {
-                        newArticleBtnEditor.style.display = 'none';
-                    }
                     break;
                     
                 case 'reviewer':
@@ -131,26 +107,8 @@ const ArticleForm = (() => {
                     if (reviewersTab) reviewersTab.style.display = 'none';
                     if (articlesTab) {
                         articlesTab.style.display = 'block';
-                        // Ocultar formulario de registro para revisores
-                        const formSection = document.querySelector('.form-section');
-                        if (formSection) {
-                            formSection.style.display = 'none';
-                        }
-                        // Ocultar botón de nuevo artículo
-                        const newArticleBtn = document.getElementById('newArticleBtn');
-                        if (newArticleBtn) {
-                            newArticleBtn.style.display = 'none';
-                        }
-                        // Mostrar mensaje especial para revisores
-                        if (articlesTable) {
-                            articlesTable.innerHTML = `
-                                <div class="reviewer-welcome">
-                                    <h3>📋 Artículos Asignados para Revisión</h3>
-                                    <p>Aquí se muestran todos los artículos con revisor asignado.</p>
-                                    <p><strong>Consejo:</strong> Abre la consola del navegador (F12) para ver qué artículos tienen revisor asignado.</p>
-                                </div>
-                            `;
-                        }
+                        // TODO: Implementar vista de artículos asignados al revisor
+                        // Por ahora mostrar todos los artículos con opción de revisión
                     }
                     break;
             }
@@ -176,20 +134,120 @@ const ArticleForm = (() => {
                 const request = indexedDB.open(this.dbName, this.dbVersion);
                 
                 request.onerror = () => {
+                    console.error('Error opening IndexedDB:', request.error);
+                    reject(request.error);
+                };
+                
+                request.onsuccess = () => {
+                    this.db = request.result;
+                    console.log('✅ IndexedDB abierta correctamente con versión', this.dbVersion);
+                    resolve(this.db);
+                };
+                
+                request.onupgradeneeded = (event) => {
+                    console.log('🔄 Actualizando IndexedDB schema a versión', event.newVersion);
+                    const db = event.target.result;
+                    
+                    if (!db.objectStoreNames.contains('articles')) {
+                        const articleStore = db.createObjectStore('articles', { 
+                            keyPath: 'id', 
+                            autoIncrement: true 
+                        });
+                        articleStore.createIndex('title', 'title', { unique: false });
+                        articleStore.createIndex('author', 'author', { unique: false });
+                        articleStore.createIndex('category', 'category', { unique: false });
+                    }
+                    
+                    if (!db.objectStoreNames.contains('reviewers')) {
+                        const reviewerStore = db.createObjectStore('reviewers', { 
+                            keyPath: 'id', 
+                            autoIncrement: true 
+                        });
+                        reviewerStore.createIndex('name', 'name', { unique: false });
+                        reviewerStore.createIndex('expertise', 'expertise', { unique: false });
+                    }
+                };
+            });
+        }
+        
         async save(article) {
             try {
-                console.log('� Guardando artículo en Firebase:', article);
-                const docRef = this.articlesCollection().doc(article.id);
-                await docRef.set(article);
-                console.log('✅ Artículo guardado en Firebase');
-                return article;
+                await this.initDB();
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction(['articles'], 'readwrite');
+                    const store = transaction.objectStore('articles');
+                    
+                    const request = store.add(article);
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
+                });
             } catch (error) {
-                console.error('❌ Error guardando artículo:', error);
+                console.error('Error saving article:', error);
                 throw error;
             }
-        },
+        }
         
-        // Guardar revisor en Firebase
+        async getAll() {
+            try {
+                await this.initDB();
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction(['articles'], 'readonly');
+                    const store = transaction.objectStore('articles');
+                    
+                    const request = store.getAll();
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
+                });
+            } catch (error) {
+                console.error('Error getting articles:', error);
+                return [];
+            }
+        }
+        
+        async update(id, changes) {
+            try {
+                await this.initDB();
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction(['articles'], 'readwrite');
+                    const store = transaction.objectStore('articles');
+                    
+                    const request = store.get(id);
+                    request.onsuccess = () => {
+                        const article = request.result;
+                        if (article) {
+                            Object.assign(article, changes);
+                            const updateRequest = store.put(article);
+                            updateRequest.onsuccess = () => resolve(updateRequest.result);
+                            updateRequest.onerror = () => reject(updateRequest.error);
+                        } else {
+                            reject(new Error('Article not found'));
+                        }
+                    };
+                    request.onerror = () => reject(request.error);
+                });
+            } catch (error) {
+                console.error('Error updating article:', error);
+                throw error;
+            }
+        }
+        
+        async delete(id) {
+            try {
+                await this.initDB();
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction(['articles'], 'readwrite');
+                    const store = transaction.objectStore('articles');
+                    
+                    const request = store.delete(id);
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
+                });
+            } catch (error) {
+                console.error('Error deleting article:', error);
+                throw error;
+            }
+        }
+        
         // Métodos para revisores
         async saveReviewer(reviewer) {
             try {
@@ -286,7 +344,6 @@ const ArticleForm = (() => {
     
     // Inicializar elementos del DOM
     const initializeElements = () => {
-        // Elementos de formulario de artículos
         form = document.getElementById('articleForm');
         submitBtn = document.getElementById('submitBtn');
         successMessage = document.getElementById('successMessage');
@@ -312,25 +369,6 @@ const ArticleForm = (() => {
         categoryFilter = document.getElementById('categoryFilter');
         articlesTable = document.getElementById('articlesTable');
         articlesCount = document.getElementById('articlesCount');
-        
-        // Elementos de formulario de revisores
-        reviewerForm = document.getElementById('reviewerForm');
-        submitReviewerBtn = document.getElementById('submitReviewerBtn');
-        reviewerSuccessMessage = document.getElementById('reviewerSuccessMessage');
-        newReviewerBtn = document.getElementById('newReviewerBtn');
-        
-        reviewerNameInput = document.getElementById('reviewerName');
-        reviewerEmailInput = document.getElementById('reviewerEmail');
-        reviewerExpertiseInput = document.getElementById('reviewerExpertise');
-        
-        reviewerNameError = document.getElementById('reviewerNameError');
-        reviewerEmailError = document.getElementById('reviewerEmailError');
-        reviewerExpertiseError = document.getElementById('reviewerExpertiseError');
-        
-        reviewerSearchInput = document.getElementById('reviewerSearchInput');
-        expertiseFilter = document.getElementById('expertiseFilter');
-        reviewersTable = document.getElementById('reviewersTable');
-        reviewersCount = document.getElementById('reviewersCount');
     };
     
     // Validación de formulario
@@ -354,108 +392,7 @@ const ArticleForm = (() => {
         }
     };
     
-    // Validaciones para formulario de revisores
-    const validateReviewerName = () => {
-        const value = reviewerNameInput.value.trim();
-        if (value.length === 0) {
-            showError(reviewerNameInput, reviewerNameError);
-            return false;
-        } else if (value.length < 3) {
-            reviewerNameError.textContent = 'El nombre debe tener al menos 3 caracteres';
-            showError(reviewerNameInput, reviewerNameError);
-            return false;
-        } else {
-            hideError(reviewerNameInput, reviewerNameError);
-            return true;
-        }
-    };
-    
-    const validateReviewerEmail = () => {
-        const value = reviewerEmailInput.value.trim();
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        
-        if (value.length === 0) {
-            showError(reviewerEmailInput, reviewerEmailError);
-            return false;
-        } else if (!emailRegex.test(value)) {
-            reviewerEmailError.textContent = 'Ingrese un correo electrónico válido';
-            showError(reviewerEmailInput, reviewerEmailError);
-            return false;
-        } else {
-            hideError(reviewerEmailInput, reviewerEmailError);
-            return true;
-        }
-    };
-    
-    const validateReviewerExpertise = () => {
-        const value = reviewerExpertiseInput.value;
-        if (value === '') {
-            showError(reviewerExpertiseInput, reviewerExpertiseError);
-            return false;
-        } else {
-            hideError(reviewerExpertiseInput, reviewerExpertiseError);
-            return true;
-        }
-    };
-    
-    const updateReviewerSubmitButton = () => {
-        const isNameValid = validateReviewerName();
-        const isEmailValid = validateReviewerEmail();
-        const isExpertiseValid = validateReviewerExpertise();
-        
-        submitReviewerBtn.disabled = !(isNameValid && isEmailValid && isExpertiseValid);
-    };
-    
-    const clearReviewerForm = () => {
-        reviewerForm.reset();
-        [reviewerNameInput, reviewerEmailInput, reviewerExpertiseInput].forEach(input => {
-            if (input) hideError(input, input.nextElementSibling);
-        });
-        updateReviewerSubmitButton();
-    };
-    
-    const showReviewerSuccessMessage = () => {
-        const reviewerFormSection = reviewerForm.closest('.form-section');
-        reviewerFormSection.style.display = 'none';
-        reviewerSuccessMessage.style.display = 'block';
-    };
-    
-    // Manejo de envío del formulario de revisores
-    const handleReviewerSubmit = async (event) => {
-        event.preventDefault();
-        
-        const isNameValid = validateReviewerName();
-        const isEmailValid = validateReviewerEmail();
-        const isExpertiseValid = validateReviewerExpertise();
-        
-        if (!isNameValid || !isEmailValid || !isExpertiseValid) {
-            return;
-        }
-        
-        const newReviewer = {
-            id: Date.now().toString(),
-            name: reviewerNameInput.value.trim(),
-            email: reviewerEmailInput.value.trim(),
-            expertise: reviewerExpertiseInput.value,
-            status: 'active',
-            registeredDate: new Date().toLocaleDateString('es-ES'),
-            timestamp: new Date().toISOString()
-        };
-        
-        try {
-            await storage.saveReviewer(newReviewer);
-            reviewers.unshift(newReviewer);
-            
-            console.log('Revisor guardado:', newReviewer);
-            filterReviewers();
-            
-            showReviewerSuccessMessage();
-            clearReviewerForm();
-        } catch (error) {
-            console.error('Error al guardar revisor:', error);
-            showErrorMessage('Error al guardar el revisor. Por favor, inténtelo nuevamente.');
-        }
-    };
+    // Validaciones
     const validateTitle = () => {
         const value = titleInput.value.trim();
         formData.title = value;
@@ -698,22 +635,7 @@ const ArticleForm = (() => {
         const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
         const categoryValue = categoryFilter ? categoryFilter.value : '';
         
-        // Filtrar según el rol
-        let articlesToFilter = articles;
-        
-        if (currentRole === 'reviewer') {
-            // Revisor solo ve artículos asignados a él
-            // Por ahora, mostrar todos los artículos que tengan revisor asignado
-            // para que el revisor pueda verlos y luego filtrar por su nombre
-            articlesToFilter = articles.filter(article => 
-                article.assignedReviewer && article.assignedReviewer !== ''
-            );
-            
-            console.log('📋 Artículos con revisor asignado:', articlesToFilter.length);
-            console.log('📋 Revisores disponibles:', reviewers.map(r => r.name));
-        }
-        
-        filteredArticles = articlesToFilter.filter(article => {
+        filteredArticles = articles.filter(article => {
             const matchesSearch = !searchTerm || 
                 article.title.toLowerCase().includes(searchTerm) ||
                 article.author.toLowerCase().includes(searchTerm) ||
@@ -732,36 +654,17 @@ const ArticleForm = (() => {
         if (!articlesTable) return;
         
         if (filteredArticles.length === 0) {
-            if (currentRole === 'reviewer') {
-                articlesTable.innerHTML = `
-                    <div class="no-articles">
-                        <h3>📭 No tienes artículos asignados</h3>
-                        <p>No hay artículos asignados para tu revisión en este momento.</p>
-                        <p>El Editor te asignará artículos cuando estén listos para revisión.</p>
-                    </div>
-                `;
-            } else if (currentRole === 'editor') {
-                articlesTable.innerHTML = `
-                    <div class="no-articles">
-                        <h3>📂 No hay artículos disponibles</h3>
-                        <p>No hay artículos registrados aún.</p>
-                        <p>Los Autores deben registrar artículos primero para que puedas asignar revisores.</p>
-                    </div>
-                `;
-            } else {
-                articlesTable.innerHTML = `
-                    <div class="no-articles">
-                        <p>No hay artículos registrados aún. Registra tu primer artículo para comenzar.</p>
-                    </div>
-                `;
-            }
+            articlesTable.innerHTML = `
+                <div class="no-articles">
+                    <p>No hay artículos registrados aún. Registra tu primer artículo para comenzar.</p>
+                </div>
+            `;
             if (articlesCount) articlesCount.textContent = '0';
             return;
         }
         
         const articlesHTML = filteredArticles.map(article => {
             const isEditor = currentRole === 'editor';
-            const isReviewer = currentRole === 'reviewer';
             const hasReviewer = article.assignedReviewer;
             
             return `
@@ -770,12 +673,11 @@ const ArticleForm = (() => {
                     <h3 class="article-title">${article.title}</h3>
                     ${article.category ? `<span class="article-category">${getCategoryLabel(article.category)}</span>` : ''}
                     ${article.deviceId ? `<span class="device-badge">📱 ${article.deviceId === 'mobile' ? 'Celular' : 'Laptop'}</span>` : ''}
-                    ${hasReviewer ? `<span class="reviewer-assigned">✅ Asignado a: ${hasReviewer}</span>` : ''}
+                    ${hasReviewer ? `<span class="reviewer-assigned">✅ ${hasReviewer}</span>` : ''}
                 </div>
                 <div class="article-meta">
                     <span class="article-author">Autor: ${article.author}</span>
                     <span class="article-date">${article.date}</span>
-                    ${article.assignedDate ? `<span class="assigned-date">Asignado: ${article.assignedDate}</span>` : ''}
                 </div>
                 <div class="article-summary">
                     ${article.summary}
@@ -786,17 +688,11 @@ const ArticleForm = (() => {
                 </div>
                 ` : ''}
                 <div class="article-actions">
+                    <button class="btn btn-small btn-primary" onclick="editArticle('${article.id}')">Editar</button>
+                    <button class="btn btn-small btn-secondary" onclick="deleteArticle('${article.id}')">Eliminar</button>
                     ${isEditor ? `
                         <button class="btn btn-small btn-info" onclick="assignReviewer('${article.id}')">
                             ${hasReviewer ? 'Cambiar Revisor' : 'Asignar Revisor'}
-                        </button>
-                    ` : ''}
-                    ${isReviewer ? `
-                        <button class="btn btn-small btn-success" onclick="reviewArticle('${article.id}')">
-                            📝 Revisar Artículo
-                        </button>
-                        <button class="btn btn-small btn-warning" onclick="downloadDocument('${article.id}')">
-                            📥 Descargar Documento
                         </button>
                     ` : ''}
                 </div>
@@ -896,7 +792,6 @@ const ArticleForm = (() => {
     
     // Configurar event listeners
     const setupEventListeners = () => {
-        // Event listeners para formulario de artículos
         if (form) {
             form.addEventListener('submit', handleArticleSubmit);
         }
@@ -955,179 +850,29 @@ const ArticleForm = (() => {
                 clearForm();
             });
         }
-        
-        // Event listeners para formulario de revisores
-        if (reviewerForm) {
-            reviewerForm.addEventListener('submit', handleReviewerSubmit);
-        }
-        
-        if (reviewerNameInput) {
-            reviewerNameInput.addEventListener('input', () => {
-                validateReviewerName();
-                updateReviewerSubmitButton();
-            });
-        }
-        
-        if (reviewerEmailInput) {
-            reviewerEmailInput.addEventListener('input', () => {
-                validateReviewerEmail();
-                updateReviewerSubmitButton();
-            });
-        }
-        
-        if (reviewerExpertiseInput) {
-            reviewerExpertiseInput.addEventListener('change', () => {
-                validateReviewerExpertise();
-                updateReviewerSubmitButton();
-            });
-        }
-        
-        if (newReviewerBtn) {
-            newReviewerBtn.addEventListener('click', () => {
-                if (reviewerSuccessMessage) reviewerSuccessMessage.style.display = 'none';
-                const reviewerFormSection = reviewerForm.closest('.form-section');
-                if (reviewerFormSection) reviewerFormSection.style.display = 'block';
-                clearReviewerForm();
-            });
-        }
-        
-        if (reviewerSearchInput) {
-            reviewerSearchInput.addEventListener('input', filterReviewers);
-        }
-        
-        if (expertiseFilter) {
-            expertiseFilter.addEventListener('change', filterReviewers);
-        }
     };
     
-    // Funciones para revisores
+    // Funciones placeholder para revisores
     const filterReviewers = () => {
-        const searchTerm = reviewerSearchInput ? reviewerSearchInput.value.toLowerCase() : '';
-        const expertiseValue = expertiseFilter ? expertiseFilter.value : '';
-        
-        filteredReviewers = reviewers.filter(reviewer => {
-            const matchesSearch = !searchTerm || 
-                reviewer.name.toLowerCase().includes(searchTerm) ||
-                reviewer.email.toLowerCase().includes(searchTerm) ||
-                reviewer.expertise.toLowerCase().includes(searchTerm);
-            
-            const matchesExpertise = !expertiseValue || reviewer.expertise === expertiseValue;
-            
-            return matchesSearch && matchesExpertise;
-        });
-        
-        renderReviewers();
+        filteredReviewers = reviewers;
     };
     
     const renderReviewers = () => {
-        if (!reviewersTable) return;
-        
-        if (filteredReviewers.length === 0) {
-            reviewersTable.innerHTML = `
-                <div class="no-reviewers">
-                    <p>No hay revisores registrados aún. Registra tu primer revisor para comenzar.</p>
-                </div>
-            `;
-            if (reviewersCount) reviewersCount.textContent = '0';
-            return;
-        }
-        
-        const reviewersHTML = filteredReviewers.map(reviewer => `
-            <div class="reviewer-item" data-id="${reviewer.id}">
-                <div class="reviewer-header">
-                    <h3 class="reviewer-name">${reviewer.name}</h3>
-                    <span class="reviewer-expertise">${getExpertiseLabel(reviewer.expertise)}</span>
-                    <span class="reviewer-status ${reviewer.status}">${reviewer.status === 'active' ? '✅ Activo' : '⏸ Inactivo'}</span>
-                </div>
-                <div class="reviewer-meta">
-                    <span class="reviewer-email">📧 ${reviewer.email}</span>
-                    <span class="reviewer-date">📅 ${reviewer.registeredDate}</span>
-                </div>
-                <div class="reviewer-actions">
-                    <button class="btn btn-small btn-primary" onclick="editReviewer('${reviewer.id}')">Editar</button>
-                    <button class="btn btn-small btn-secondary" onclick="deleteReviewer('${reviewer.id}')">Eliminar</button>
-                </div>
-            </div>
-        `).join('');
-        
-        reviewersTable.innerHTML = reviewersHTML;
-        if (reviewersCount) reviewersCount.textContent = filteredReviewers.length;
-    };
-    
-    const getExpertiseLabel = (expertise) => {
-        const labels = {
-            'ciencias': 'Ciencias',
-            'tecnologia': 'Tecnología',
-            'educacion': 'Educación',
-            'medicina': 'Medicina',
-            'ingenieria': 'Ingeniería',
-            'sociales': 'Ciencias Sociales',
-            'artes': 'Artes y Humanidades',
-            'multidisciplinario': 'Multidisciplinario'
-        };
-        return labels[expertise] || expertise;
+        // Placeholder - implementar si se necesita
     };
     
     // Inicialización principal
     const init = async () => {
-        // Test de conexión Firebase
-        if (typeof firebase !== 'undefined') {
-            console.log('🔥 Firebase disponible');
-            try {
-                const testDoc = await db.collection('test').doc('connection').set({
-                    timestamp: new Date(),
-                    status: 'connected'
-                });
-                console.log('✅ Firebase conectado exitosamente');
-            } catch (error) {
-                console.error('❌ Error Firebase:', error);
-            }
-        } else {
-            console.log('⚠️ Firebase no disponible, usando IndexedDB local');
-        }
-        
         RoleManager.init();
     };
     
     // Inicializar cuando el DOM esté listo
     document.addEventListener('DOMContentLoaded', init);
     
-    // Funciones para el Revisor
-    const reviewArticle = (articleId) => {
-        const article = articles.find(a => a.id === articleId);
-        if (article) {
-            showSuccessMessage(`Abriendo artículo para revisión: ${article.title}`);
-            // TODO: Implementar interfaz de revisión completa
-            console.log('Revisando artículo:', article);
-        }
-    };
-    
-    const downloadDocument = (articleId) => {
-        const article = articles.find(a => a.id === articleId);
-        if (article && article.documentName) {
-            showSuccessMessage(`Descargando documento: ${article.documentName}`);
-            // TODO: Implementar descarga real del documento
-            console.log('Descargando documento:', article.documentName);
-        }
-    };
-    
     // Exponer funciones globalmente
     window.assignReviewer = assignReviewer;
     window.confirmAssignReviewer = confirmAssignReviewer;
     window.closeReviewerModal = closeReviewerModal;
-    window.reviewArticle = reviewArticle;
-    window.downloadDocument = downloadDocument;
-    window.editReviewer = (id) => {
-        console.log('Editando revisor:', id);
-        // TODO: Implementar edición de revisores
-    };
-    window.deleteReviewer = (id) => {
-        if (confirm('¿Estás seguro de que deseas eliminar este revisor?')) {
-            console.log('Eliminando revisor:', id);
-            reviewers = reviewers.filter(r => r.id !== id);
-            filterReviewers();
-        }
-    };
     window.ArticleForm = {
         init,
         submitArticle: handleArticleSubmit,

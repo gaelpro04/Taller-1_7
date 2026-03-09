@@ -1,4 +1,4 @@
-// Módulo de formulario de artículos con Sistema de Roles
+// Módulo de formulario de artículos - Versión Firebase
 //Gael Jovani Lopez Garcia 11916199
 const ArticleForm = (() => {
     // Variables globales
@@ -21,18 +21,113 @@ const ArticleForm = (() => {
     let reviewers = [];
     let filteredReviewers = [];
     
+    // Sistema de Almacenamiento - Firebase Firestore
+    const ArticleStorage = {
+        // Colecciones Firebase
+        articlesCollection: () => db.collection('articles'),
+        reviewersCollection: () => db.collection('reviewers'),
+        
+        // Guardar artículo en Firebase
+        async save(article) {
+            try {
+                console.log('📝 Guardando artículo en Firebase:', article);
+                const docRef = this.articlesCollection().doc(article.id);
+                await docRef.set(article);
+                console.log('✅ Artículo guardado en Firebase');
+                return article;
+            } catch (error) {
+                console.error('❌ Error guardando artículo:', error);
+                throw error;
+            }
+        },
+        
+        // Guardar revisor en Firebase
+        async saveReviewer(reviewer) {
+            try {
+                console.log('👥 Guardando revisor en Firebase:', reviewer);
+                const docRef = this.reviewersCollection().doc(reviewer.id);
+                await docRef.set(reviewer);
+                console.log('✅ Revisor guardado en Firebase');
+                return reviewer;
+            } catch (error) {
+                console.error('❌ Error guardando revisor:', error);
+                throw error;
+            }
+        },
+        
+        // Obtener todos los artículos de Firebase
+        async getAll() {
+            try {
+                console.log('📚 Cargando artículos desde Firebase...');
+                const snapshot = await this.articlesCollection().get();
+                const articles = snapshot.docs.map(doc => doc.data());
+                console.log('✅ Artículos cargados:', articles.length);
+                return articles;
+            } catch (error) {
+                console.error('❌ Error cargando artículos:', error);
+                return [];
+            }
+        },
+        
+        // Obtener todos los revisores de Firebase
+        async getAllReviewers() {
+            try {
+                console.log('👥 Cargando revisores desde Firebase...');
+                const snapshot = await this.reviewersCollection().get();
+                const reviewers = snapshot.docs.map(doc => doc.data());
+                console.log('✅ Revisores cargados:', reviewers.length);
+                return reviewers;
+            } catch (error) {
+                console.error('❌ Error cargando revisores:', error);
+                return [];
+            }
+        },
+        
+        // Eliminar artículo
+        async delete(id) {
+            try {
+                console.log('🗑️ Eliminando artículo:', id);
+                await this.articlesCollection().doc(id).delete();
+                console.log('✅ Artículo eliminado');
+            } catch (error) {
+                console.error('❌ Error eliminando artículo:', error);
+                throw error;
+            }
+        },
+        
+        // Eliminar revisor
+        async deleteReviewer(id) {
+            try {
+                console.log('🗑️ Eliminando revisor:', id);
+                await this.reviewersCollection().doc(id).delete();
+                console.log('✅ Revisor eliminado');
+            } catch (error) {
+                console.error('❌ Error eliminando revisor:', error);
+                throw error;
+            }
+        },
+        
+        // Inicialización (ya no necesita IndexedDB)
+        async initDB() {
+            console.log('🔥 Usando Firebase Firestore - sin necesidad de inicialización local');
+            return true;
+        }
+    };
+    
+    const storage = ArticleStorage;
+    
     // Sistema de Roles
     const RoleManager = {
         init() {
-            this.setupRoleSelector();
-            this.checkStoredRole();
+            this.setupRoleButtons();
+            this.loadSavedRole();
         },
         
-        setupRoleSelector() {
-            const roleCards = document.querySelectorAll('.role-card');
-            roleCards.forEach(card => {
-                card.addEventListener('click', (e) => {
-                    const role = e.currentTarget.dataset.role;
+        setupRoleButtons() {
+            const roleButtons = document.querySelectorAll('.role-btn');
+            roleButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const role = btn.dataset.role;
                     this.selectRole(role);
                 });
             });
@@ -42,44 +137,40 @@ const ArticleForm = (() => {
             currentRole = role;
             localStorage.setItem('userRole', role);
             
-            // Actualizar UI
-            document.querySelectorAll('.role-card').forEach(card => {
-                card.classList.remove('selected');
+            // Actualizar UI de botones
+            const roleButtons = document.querySelectorAll('.role-btn');
+            roleButtons.forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.role === role) {
+                    btn.classList.add('active');
+                }
             });
-            document.querySelector(`[data-role="${role}"]`).classList.add('selected');
             
-            // Mostrar contenido principal después de breve delay
+            // Mostrar contenido principal
+            const roleSelection = document.querySelector('.role-selection');
+            const mainContent = document.querySelector('.main-content');
+            if (roleSelection) roleSelection.style.display = 'none';
+            if (mainContent) mainContent.style.display = 'block';
+            
+            // Configurar interfaz según rol
+            this.configureInterface(role);
+            
+            // Cargar datos después de un pequeño delay para asegurar que los elementos existan
             setTimeout(() => {
-                this.showMainContent();
-                this.configureInterface(role);
-                
-                // ESPERAR a que el DOM esté visible antes de inicializar elementos
-                setTimeout(() => {
-                    initializeElements();
-                    setupEventListeners();
-                    updateSubmitButton();
-                    
-                    // Inicializar Network Monitor
-                    networkMonitor.updateStatus(navigator.onLine ? 'online' : 'offline');
-                    
-                    // Cargar datos iniciales
-                    loadArticlesFromStorage();
-                    loadReviewersFromStorage();
-                }, 100);
-            }, 500);
+                initializeElements();
+                setupEventListeners();
+                updateSubmitButton();
+                networkMonitor.updateStatus();
+                loadArticlesFromStorage();
+                loadReviewersFromStorage();
+            }, 100);
         },
         
-        checkStoredRole() {
-            const storedRole = localStorage.getItem('userRole');
-            // NO auto-seleccionar rol al iniciar - dejar que usuario elija
-            // if (storedRole) {
-            //     this.selectRole(storedRole);
-            // }
-        },
-        
-        showMainContent() {
-            document.getElementById('roleSelector').style.display = 'none';
-            document.getElementById('mainContent').style.display = 'block';
+        loadSavedRole() {
+            const savedRole = localStorage.getItem('userRole');
+            if (savedRole) {
+                this.selectRole(savedRole);
+            }
         },
         
         configureInterface(role) {
@@ -147,7 +238,6 @@ const ArticleForm = (() => {
                                 <div class="reviewer-welcome">
                                     <h3>📋 Artículos Asignados para Revisión</h3>
                                     <p>Aquí se muestran todos los artículos con revisor asignado.</p>
-                                    <p><strong>Consejo:</strong> Abre la consola del navegador (F12) para ver qué artículos tienen revisor asignado.</p>
                                 </div>
                             `;
                         }
@@ -161,123 +251,30 @@ const ArticleForm = (() => {
         }
     };
     
-    // IndexedDB Storage Layer
-    class ArticleStorage {
-        constructor() {
-            this.dbName = 'ArticlesDB';
-            this.dbVersion = 3;
-            this.db = null;
-        }
-        
-        async initDB() {
-            if (this.db) return this.db;
-            
-            return new Promise((resolve, reject) => {
-                const request = indexedDB.open(this.dbName, this.dbVersion);
-                
-                request.onerror = () => {
-        async save(article) {
-            try {
-                console.log('� Guardando artículo en Firebase:', article);
-                const docRef = this.articlesCollection().doc(article.id);
-                await docRef.set(article);
-                console.log('✅ Artículo guardado en Firebase');
-                return article;
-            } catch (error) {
-                console.error('❌ Error guardando artículo:', error);
-                throw error;
-            }
-        },
-        
-        // Guardar revisor en Firebase
-        // Métodos para revisores
-        async saveReviewer(reviewer) {
-            try {
-                await this.initDB();
-                return new Promise((resolve, reject) => {
-                    if (!this.db.objectStoreNames.contains('reviewers')) {
-                        console.error('❌ Object store "reviewers" no encontrado');
-                        reject(new Error('Object store "reviewers" no encontrado. La base de datos necesita ser reinicializada.'));
-                        return;
-                    }
-                    
-                    const transaction = this.db.transaction(['reviewers'], 'readwrite');
-                    const store = transaction.objectStore('reviewers');
-                    
-                    const request = store.add(reviewer);
-                    request.onsuccess = () => {
-                        console.log('✅ Revisor guardado exitosamente');
-                        resolve(request.result);
-                    };
-                    request.onerror = () => {
-                        console.error('❌ Error guardando revisor:', request.error);
-                        reject(request.error);
-                    };
-                });
-            } catch (error) {
-                console.error('Error en saveReviewer:', error);
-                reject(error);
-            }
-        }
-        
-        async getAllReviewers() {
-            try {
-                await this.initDB();
-                return new Promise((resolve, reject) => {
-                    if (!this.db.objectStoreNames.contains('reviewers')) {
-                        console.log('⚠️ Object store "reviewers" no encontrado, inicializando vacío...');
-                        resolve([]);
-                        return;
-                    }
-                    
-                    const transaction = this.db.transaction(['reviewers'], 'readonly');
-                    const store = transaction.objectStore('reviewers');
-                    
-                    const request = store.getAll();
-                    request.onsuccess = () => resolve(request.result);
-                    request.onerror = () => reject(request.error);
-                });
-            } catch (error) {
-                console.error('Error en getAllReviewers:', error);
-                return [];
-            }
-        }
-    }
-    
-    const storage = new ArticleStorage();
-    
-    // Network Monitor
+    // Sistema de Monitoreo de Red
     class NetworkMonitor {
         constructor() {
             this.isOnline = navigator.onLine;
-            this.callbacks = { online: [], offline: [] };
             this.setupEventListeners();
         }
         
         setupEventListeners() {
-            window.addEventListener('online', () => this.triggerCallbacks('online'));
-            window.addEventListener('offline', () => this.triggerCallbacks('offline'));
+            window.addEventListener('online', () => {
+                this.isOnline = true;
+                this.updateStatus();
+            });
+            
+            window.addEventListener('offline', () => {
+                this.isOnline = false;
+                this.updateStatus();
+            });
         }
         
-        onOnline(callback) {
-            this.callbacks.online.push(callback);
-        }
-        
-        onOffline(callback) {
-            this.callbacks.offline.push(callback);
-        }
-        
-        triggerCallbacks(type) {
-            this.callbacks[type].forEach(callback => callback());
-        }
-        
-        updateStatus(status) {
+        updateStatus() {
             const statusElement = document.getElementById('connectionStatus');
             if (statusElement) {
-                statusElement.className = `connection-status ${status}`;
-                statusElement.textContent = status === 'online' ? '🟢 Conectado' : 
-                                                   status === 'offline' ? '🔴 Sin Conexión' : 
-                                                   '🔄 Sincronizando...';
+                statusElement.textContent = this.isOnline ? '🟢 En línea' : '🔴 Sin conexión';
+                statusElement.className = this.isOnline ? 'online' : 'offline';
             }
         }
     }
@@ -456,6 +453,7 @@ const ArticleForm = (() => {
             showErrorMessage('Error al guardar el revisor. Por favor, inténtelo nuevamente.');
         }
     };
+    
     const validateTitle = () => {
         const value = titleInput.value.trim();
         formData.title = value;
@@ -479,16 +477,13 @@ const ArticleForm = (() => {
         
         if (value.length === 0) {
             showError(summaryInput, summaryError);
-            updateCharCount();
             return false;
         } else if (value.length < 50) {
             summaryError.textContent = 'El resumen debe tener al menos 50 caracteres';
             showError(summaryInput, summaryError);
-            updateCharCount();
             return false;
         } else {
             hideError(summaryInput, summaryError);
-            updateCharCount();
             return true;
         }
     };
@@ -501,7 +496,7 @@ const ArticleForm = (() => {
             showError(authorInput, authorError);
             return false;
         } else if (value.length < 3) {
-            authorError.textContent = 'El nombre del autor debe tener al menos 3 caracteres';
+            authorError.textContent = 'El autor debe tener al menos 3 caracteres';
             showError(authorInput, authorError);
             return false;
         } else {
@@ -512,8 +507,8 @@ const ArticleForm = (() => {
     
     const validateEmail = () => {
         const value = emailInput.value.trim();
-        formData.email = value;
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        formData.email = value;
         
         if (value.length === 0) {
             showError(emailInput, emailError);
@@ -530,26 +525,30 @@ const ArticleForm = (() => {
     
     const validateDocument = () => {
         const file = documentInput.files[0];
+        formData.document = file;
+        
         if (!file) {
             showError(documentInput, documentError);
             return false;
-        } else {
-            const maxSize = 10 * 1024 * 1024; // 10MB
-            const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'];
-            
-            if (file.size > maxSize) {
-                documentError.textContent = 'El documento no debe exceder 10MB';
-                showError(documentInput, documentError);
-                return false;
-            } else if (!allowedTypes.includes(file.type)) {
-                documentError.textContent = 'Formato de archivo no permitido';
-                showError(documentInput, documentError);
-                return false;
-            } else {
-                hideError(documentInput, documentError);
-                return true;
-            }
         }
+        
+        const maxSize = 10 * 1024 * 1024; // 10MB
+        const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'];
+        
+        if (file.size > maxSize) {
+            documentError.textContent = 'El documento no debe exceder los 10MB';
+            showError(documentInput, documentError);
+            return false;
+        }
+        
+        if (!allowedTypes.includes(file.type)) {
+            documentError.textContent = 'Formatos permitidos: PDF, DOC, DOCX, TXT';
+            showError(documentInput, documentError);
+            return false;
+        }
+        
+        hideError(documentInput, documentError);
+        return true;
     };
     
     const updateSubmitButton = () => {
@@ -564,56 +563,37 @@ const ArticleForm = (() => {
     
     const clearForm = () => {
         form.reset();
-        formData = {
-            title: '',
-            summary: '',
-            author: '',
-            email: '',
-            keywords: '',
-            category: ''
-        };
-        
-        [titleInput, summaryInput, authorInput, emailInput, keywordsInput, categorySelect, documentInput].forEach(input => {
+        formData = {};
+        [titleInput, summaryInput, authorInput, emailInput, documentInput].forEach(input => {
             if (input) hideError(input, input.nextElementSibling);
         });
-        
         updateCharCount();
         updateSubmitButton();
     };
     
-    const showSuccessMessage = (customMessage = null) => {
+    const showSuccessMessage = () => {
         formSection.style.display = 'none';
         successMessage.style.display = 'block';
-        
-        if (customMessage) {
-            const messageElement = successMessage.querySelector('p');
-            if (messageElement) {
-                messageElement.textContent = customMessage;
-            }
-        }
     };
     
     const showErrorMessage = (message) => {
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'error-message global';
-        errorDiv.textContent = message;
-        errorDiv.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: #e74c3c;
-            color: white;
-            padding: 15px 20px;
-            border-radius: 8px;
-            z-index: 1000;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        // Crear elemento de mensaje de error si no existe
+        let errorContainer = document.getElementById('errorMessage');
+        if (!errorContainer) {
+            errorContainer = document.createElement('div');
+            errorContainer.id = 'errorMessage';
+            errorContainer.className = 'error-message-container';
+            formSection.parentNode.insertBefore(errorContainer, formSection);
+        }
+        
+        errorContainer.innerHTML = `
+            <div class="error-content">
+                <h4>Error</h4>
+                <p>${message}</p>
+                <button class="btn btn-secondary" onclick="this.parentElement.parentElement.remove()">Cerrar</button>
+            </div>
         `;
-        
-        document.body.appendChild(errorDiv);
-        
-        setTimeout(() => {
-            errorDiv.remove();
-        }, 3000);
+        errorContainer.style.display = 'block';
     };
     
     // Manejo de envío del formulario
@@ -630,17 +610,21 @@ const ArticleForm = (() => {
             return;
         }
         
-        formData.keywords = keywordsInput.value.trim();
-        formData.category = categorySelect.value;
-        
         const newArticle = {
             id: currentEditingId || Date.now().toString(),
-            ...formData,
+            title: formData.title,
+            summary: formData.summary,
+            author: formData.author,
+            email: formData.email,
+            keywords: keywordsInput.value.trim(),
+            category: categorySelect.value,
+            documentName: formData.document.name,
+            documentSize: formData.document.size,
             date: new Date().toLocaleDateString('es-ES'),
             timestamp: new Date().toISOString(),
+            status: 'pending',
             deviceId: navigator.userAgent.includes('Mobile') ? 'mobile' : 'desktop',
-            documentName: documentInput.files[0] ? documentInput.files[0].name : null,
-            documentSize: documentInput.files[0] ? documentInput.files[0].size : null
+            syncStatus: networkMonitor.isOnline ? 'synced' : 'pending'
         };
         
         try {
@@ -650,8 +634,7 @@ const ArticleForm = (() => {
             console.log('Artículo guardado:', newArticle);
             filterArticles();
             
-            const message = `Artículo registrado exitosamente (${newArticle.deviceId})`;
-            showSuccessMessage(message);
+            showSuccessMessage();
             clearForm();
         } catch (error) {
             console.error('Error al guardar artículo:', error);
@@ -659,35 +642,24 @@ const ArticleForm = (() => {
         }
     };
     
-    // Cargar artículos desde IndexedDB
+    // Cargar datos desde Firebase
     const loadArticlesFromStorage = async () => {
         try {
-            console.log('Cargando artículos desde IndexedDB...');
-            await storage.initDB();
-            await new Promise(resolve => setTimeout(resolve, 300));
-            
             articles = await storage.getAll();
-            console.log(`Se cargaron ${articles.length} artículos desde IndexedDB`);
             filterArticles();
         } catch (error) {
-            console.error('Error al cargar artículos:', error);
+            console.error('Error cargando artículos:', error);
             articles = [];
             filterArticles();
         }
     };
     
-    // Cargar revisores desde IndexedDB
     const loadReviewersFromStorage = async () => {
         try {
-            console.log('Cargando revisores desde IndexedDB...');
-            await storage.initDB();
-            await new Promise(resolve => setTimeout(resolve, 300));
-            
             reviewers = await storage.getAllReviewers();
-            console.log(`Se cargaron ${reviewers.length} revisores desde IndexedDB`);
             filterReviewers();
         } catch (error) {
-            console.error('Error al cargar revisores:', error);
+            console.error('Error cargando revisores:', error);
             reviewers = [];
             filterReviewers();
         }
@@ -821,77 +793,72 @@ const ArticleForm = (() => {
         return labels[category] || category;
     };
     
-    // Función para asignar revisor a artículo (solo para Editor)
-    const assignReviewer = (articleId) => {
-        if (currentRole !== 'editor') {
-            showErrorMessage('Solo los Editores pueden asignar revisores');
+    // Funciones para revisores
+    const filterReviewers = () => {
+        const searchTerm = reviewerSearchInput ? reviewerSearchInput.value.toLowerCase() : '';
+        const expertiseValue = expertiseFilter ? expertiseFilter.value : '';
+        
+        filteredReviewers = reviewers.filter(reviewer => {
+            const matchesSearch = !searchTerm || 
+                reviewer.name.toLowerCase().includes(searchTerm) ||
+                reviewer.email.toLowerCase().includes(searchTerm) ||
+                reviewer.expertise.toLowerCase().includes(searchTerm);
+            
+            const matchesExpertise = !expertiseValue || reviewer.expertise === expertiseValue;
+            
+            return matchesSearch && matchesExpertise;
+        });
+        
+        renderReviewers();
+    };
+    
+    const renderReviewers = () => {
+        if (!reviewersTable) return;
+        
+        if (filteredReviewers.length === 0) {
+            reviewersTable.innerHTML = `
+                <div class="no-reviewers">
+                    <p>No hay revisores registrados aún. Registra tu primer revisor para comenzar.</p>
+                </div>
+            `;
+            if (reviewersCount) reviewersCount.textContent = '0';
             return;
         }
         
-        // Obtener lista de revisores disponibles
-        const availableReviewers = reviewers.filter(r => r.status !== 'inactive');
-        
-        if (availableReviewers.length === 0) {
-            showErrorMessage('No hay revisores disponibles. Primero registra un revisor.');
-            return;
-        }
-        
-        // Crear modal simple para seleccionar revisor
-        const modal = document.createElement('div');
-        modal.className = 'reviewer-modal';
-        modal.innerHTML = `
-            <div class="modal-content">
-                <h3>Asignar Revisor</h3>
-                <p>Selecciona un revisor para este artículo:</p>
-                <select id="reviewerSelect">
-                    <option value="">-- Seleccionar Revisor --</option>
-                    ${availableReviewers.map(r => `
-                        <option value="${r.name}">${r.name} - ${r.expertise}</option>
-                    `).join('')}
-                </select>
-                <div class="modal-actions">
-                    <button class="btn btn-primary" onclick="confirmAssignReviewer('${articleId}')">Asignar</button>
-                    <button class="btn btn-secondary" onclick="closeReviewerModal()">Cancelar</button>
+        const reviewersHTML = filteredReviewers.map(reviewer => `
+            <div class="reviewer-item" data-id="${reviewer.id}">
+                <div class="reviewer-header">
+                    <h3 class="reviewer-name">${reviewer.name}</h3>
+                    <span class="reviewer-expertise">${getExpertiseLabel(reviewer.expertise)}</span>
+                    <span class="reviewer-status ${reviewer.status}">${reviewer.status === 'active' ? '✅ Activo' : '⏸ Inactivo'}</span>
+                </div>
+                <div class="reviewer-meta">
+                    <span class="reviewer-email">📧 ${reviewer.email}</span>
+                    <span class="reviewer-date">📅 ${reviewer.registeredDate}</span>
+                </div>
+                <div class="reviewer-actions">
+                    <button class="btn btn-small btn-primary" onclick="editReviewer('${reviewer.id}')">Editar</button>
+                    <button class="btn btn-small btn-secondary" onclick="deleteReviewer('${reviewer.id}')">Eliminar</button>
                 </div>
             </div>
-        `;
+        `).join('');
         
-        document.body.appendChild(modal);
+        reviewersTable.innerHTML = reviewersHTML;
+        if (reviewersCount) reviewersCount.textContent = filteredReviewers.length;
     };
     
-    // Confirmar asignación de revisor
-    const confirmAssignReviewer = (articleId) => {
-        const selectedReviewer = document.getElementById('reviewerSelect').value;
-        
-        if (!selectedReviewer) {
-            showErrorMessage('Por favor selecciona un revisor');
-            return;
-        }
-        
-        // Actualizar artículo con revisor asignado
-        const articleIndex = articles.findIndex(a => a.id === articleId);
-        if (articleIndex !== -1) {
-            articles[articleIndex].assignedReviewer = selectedReviewer;
-            articles[articleIndex].assignedDate = new Date().toLocaleDateString('es-ES');
-            
-            // Guardar en IndexedDB
-            storage.update(articleId, articles[articleIndex]).then(() => {
-                showSuccessMessage(`Revisor ${selectedReviewer} asignado exitosamente`);
-                closeReviewerModal();
-                renderArticles();
-            }).catch(error => {
-                console.error('Error asignando revisor:', error);
-                showErrorMessage('Error al asignar revisor');
-            });
-        }
-    };
-    
-    // Cerrar modal de asignación
-    const closeReviewerModal = () => {
-        const modal = document.querySelector('.reviewer-modal');
-        if (modal) {
-            modal.remove();
-        }
+    const getExpertiseLabel = (expertise) => {
+        const labels = {
+            'ciencias': 'Ciencias',
+            'tecnologia': 'Tecnología',
+            'educacion': 'Educación',
+            'medicina': 'Medicina',
+            'ingenieria': 'Ingeniería',
+            'sociales': 'Ciencias Sociales',
+            'artes': 'Artes y Humanidades',
+            'multidisciplinario': 'Multidisciplinario'
+        };
+        return labels[expertise] || expertise;
     };
     
     // Configurar event listeners
@@ -1000,72 +967,86 @@ const ArticleForm = (() => {
         }
     };
     
-    // Funciones para revisores
-    const filterReviewers = () => {
-        const searchTerm = reviewerSearchInput ? reviewerSearchInput.value.toLowerCase() : '';
-        const expertiseValue = expertiseFilter ? expertiseFilter.value : '';
+    // Función para asignar revisor
+    const assignReviewer = (articleId) => {
+        const article = articles.find(a => a.id === articleId);
+        if (!article) return;
         
-        filteredReviewers = reviewers.filter(reviewer => {
-            const matchesSearch = !searchTerm || 
-                reviewer.name.toLowerCase().includes(searchTerm) ||
-                reviewer.email.toLowerCase().includes(searchTerm) ||
-                reviewer.expertise.toLowerCase().includes(searchTerm);
-            
-            const matchesExpertise = !expertiseValue || reviewer.expertise === expertiseValue;
-            
-            return matchesSearch && matchesExpertise;
-        });
+        // Crear modal de selección de revisores
+        const modal = document.createElement('div');
+        modal.className = 'reviewer-modal';
+        modal.innerHTML = `
+            <div class="modal-overlay" onclick="closeReviewerModal()"></div>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Asignar Revisor</h3>
+                    <button class="modal-close" onclick="closeReviewerModal()">×</button>
+                </div>
+                <div class="modal-body">
+                    <h4>Artículo: ${article.title}</h4>
+                    <div class="reviewer-list">
+                        ${reviewers.map(reviewer => `
+                            <div class="reviewer-option">
+                                <label>
+                                    <input type="radio" name="selectedReviewer" value="${reviewer.name}">
+                                    <span class="reviewer-info">
+                                        <strong>${reviewer.name}</strong> - ${getExpertiseLabel(reviewer.expertise)}
+                                        <br><small>${reviewer.email}</small>
+                                    </span>
+                                </label>
+                            </div>
+                        `).join('')}
+                        ${reviewers.length === 0 ? '<p>No hay revisores registrados. Registra revisores primero.</p>' : ''}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeReviewerModal()">Cancelar</button>
+                    <button class="btn btn-primary" onclick="confirmAssignReviewer('${articleId}')" ${reviewers.length === 0 ? 'disabled' : ''}>
+                        Asignar Revisor
+                    </button>
+                </div>
+            </div>
+        `;
         
-        renderReviewers();
+        document.body.appendChild(modal);
     };
     
-    const renderReviewers = () => {
-        if (!reviewersTable) return;
+    // Confirmar asignación de revisor
+    const confirmAssignReviewer = async (articleId) => {
+        const selectedReviewer = document.querySelector('input[name="selectedReviewer"]:checked');
         
-        if (filteredReviewers.length === 0) {
-            reviewersTable.innerHTML = `
-                <div class="no-reviewers">
-                    <p>No hay revisores registrados aún. Registra tu primer revisor para comenzar.</p>
-                </div>
-            `;
-            if (reviewersCount) reviewersCount.textContent = '0';
+        if (!selectedReviewer) {
+            alert('Por favor, selecciona un revisor');
             return;
         }
         
-        const reviewersHTML = filteredReviewers.map(reviewer => `
-            <div class="reviewer-item" data-id="${reviewer.id}">
-                <div class="reviewer-header">
-                    <h3 class="reviewer-name">${reviewer.name}</h3>
-                    <span class="reviewer-expertise">${getExpertiseLabel(reviewer.expertise)}</span>
-                    <span class="reviewer-status ${reviewer.status}">${reviewer.status === 'active' ? '✅ Activo' : '⏸ Inactivo'}</span>
-                </div>
-                <div class="reviewer-meta">
-                    <span class="reviewer-email">📧 ${reviewer.email}</span>
-                    <span class="reviewer-date">📅 ${reviewer.registeredDate}</span>
-                </div>
-                <div class="reviewer-actions">
-                    <button class="btn btn-small btn-primary" onclick="editReviewer('${reviewer.id}')">Editar</button>
-                    <button class="btn btn-small btn-secondary" onclick="deleteReviewer('${reviewer.id}')">Eliminar</button>
-                </div>
-            </div>
-        `).join('');
+        const article = articles.find(a => a.id === articleId);
+        if (!article) return;
         
-        reviewersTable.innerHTML = reviewersHTML;
-        if (reviewersCount) reviewersCount.textContent = filteredReviewers.length;
+        article.assignedReviewer = selectedReviewer.value;
+        article.assignedDate = new Date().toLocaleDateString('es-ES');
+        
+        try {
+            await storage.save(article);
+            console.log('Revisor asignado:', selectedReviewer.value, 'al artículo:', article.title);
+            
+            filterArticles();
+            closeReviewerModal();
+            
+            // Mostrar mensaje de éxito
+            showSuccessMessage(`Revisor ${selectedReviewer.value} asignado exitosamente al artículo "${article.title}"`);
+        } catch (error) {
+            console.error('Error asignando revisor:', error);
+            alert('Error al asignar revisor. Por favor, inténtelo nuevamente.');
+        }
     };
     
-    const getExpertiseLabel = (expertise) => {
-        const labels = {
-            'ciencias': 'Ciencias',
-            'tecnologia': 'Tecnología',
-            'educacion': 'Educación',
-            'medicina': 'Medicina',
-            'ingenieria': 'Ingeniería',
-            'sociales': 'Ciencias Sociales',
-            'artes': 'Artes y Humanidades',
-            'multidisciplinario': 'Multidisciplinario'
-        };
-        return labels[expertise] || expertise;
+    // Cerrar modal de asignación
+    const closeReviewerModal = () => {
+        const modal = document.querySelector('.reviewer-modal');
+        if (modal) {
+            modal.remove();
+        }
     };
     
     // Inicialización principal
@@ -1139,20 +1120,13 @@ const ArticleForm = (() => {
                 articles = articles.filter(a => a.id !== id);
                 filterArticles();
             }
-        },
-        editArticle: (id) => {
-            console.log('Editando artículo:', id);
-            const article = articles.find(a => a.id === id);
-            if (article) {
-                titleInput.value = article.title;
-                summaryInput.value = article.summary;
-                authorInput.value = article.author;
-                emailInput.value = article.email;
-                keywordsInput.value = article.keywords || '';
-                categorySelect.value = article.category || '';
-                currentEditingId = id;
-                updateSubmitButton();
-            }
         }
+    };
+    
+    return {
+        init,
+        submitArticle: handleArticleSubmit,
+        clearForm,
+        filterArticles
     };
 })();
