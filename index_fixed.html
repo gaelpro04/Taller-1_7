@@ -183,7 +183,7 @@
                             </button>
                         </div>
                     </form>
-                </section>
+                </div>
 
                 <section id="successMessage" class="success-message" style="display: none;">
                     <div class="success-content">
@@ -219,123 +219,123 @@
                     <div id="articlesTable" class="articles-table">
                         <div class="no-articles">
                             <p>No hay artículos registrados aún. Registra tu primer artículo para comenzar.</p>
+                        </div>
                     </div>
-                </div>
-            </section>
-        </div>
-
-        <!-- Contenido de Revisores -->
-        <section id="reviewersTab" class="tab-content" role="tabpanel" aria-labelledby="reviewersTabBtn">
-            <div class="form-section">
-                <h2>Registrar Nuevo Revisor</h2>
-                <form id="reviewerForm" class="reviewer-form">
-                    <div class="form-group">
-                        <label for="reviewerName">Nombre Completo *</label>
-                        <input 
-                            type="text" 
-                            id="reviewerName" 
-                            name="reviewerName" 
-                            class="form-control" 
-                            placeholder="Ingrese el nombre completo del revisor"
-                            required
-                        >
-                        <span class="error-message" id="reviewerNameError">El nombre es obligatorio</span>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="reviewerEmail">Correo Electrónico *</label>
-                        <input 
-                            type="email" 
-                            id="reviewerEmail" 
-                            name="reviewerEmail" 
-                            class="form-control" 
-                            placeholder="revisor@ejemplo.com"
-                            required
-                        >
-                        <span class="error-message" id="reviewerEmailError">Ingrese un correo electrónico válido</span>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="reviewerExpertise">Área de Expertise *</label>
-                        <select id="reviewerExpertise" name="reviewerExpertise" class="form-control" required>
-                            <option value="">Seleccione un área de expertise</option>
-                            <option value="ciencias">Ciencias</option>
-                            <option value="tecnologia">Tecnología</option>
-                            <option value="educacion">Educación</option>
-                            <option value="medicina">Medicina</option>
-                            <option value="ingenieria">Ingeniería</option>
-                            <option value="sociales">Ciencias Sociales</option>
-                            <option value="artes">Artes y Humanidades</option>
-                            <option value="multidisciplinario">Multidisciplinario</option>
-                        </select>
-                        <span class="error-message" id="reviewerExpertiseError">Seleccione un área de expertise</span>
-                    </div>
-
-                    <div class="form-actions">
-                        <button type="submit" id="submitReviewerBtn" class="btn btn-primary" disabled>
-                            <span class="btn-text">Registrar Revisor</span>
-                            <span class="btn-loading" style="display: none;">Registrando...</span>
-                        </button>
-                        <button type="reset" class="btn btn-secondary">
-                            Limpiar Formulario
-                        </button>
-                    </div>
-                </form>
-            </div>
-
-            <section id="reviewerSuccessMessage" class="success-message" style="display: none;">
-                <div class="success-content">
-                    <h3>¡Revisor Registrado Exitosamente!</h3>
-                    <p>El revisor ha sido registrado y está disponible para el proceso de revisión por pares.</p>
-                    <button class="btn btn-primary" id="newReviewerBtn">Registrar Nuevo Revisor</button>
-                </div>
+                </section>
             </section>
 
-            <section class="reviewers-section">
-                <h2>Revisores Registrados</h2>
-                <div class="reviewers-controls">
-                    <div class="search-box">
-                        <input type="text" id="reviewerSearchInput" placeholder="Buscar revisores por nombre, email o expertise..." class="form-control">
-                    </div>
-                    <div class="filter-box">
-                        <select id="expertiseFilter" class="form-control">
-                            <option value="">Todas las áreas</option>
-                            <option value="ciencias">Ciencias</option>
-                            <option value="tecnologia">Tecnología</option>
-                            <option value="educacion">Educación</option>
-                            <option value="medicina">Medicina</option>
-                            <option value="ingenieria">Ingeniería</option>
-                            <option value="sociales">Ciencias Sociales</option>
-                            <option value="artes">Artes y Humanidades</option>
-                            <option value="multidisciplinario">Multidisciplinario</option>
-                        </select>
-                    </div>
+            <!-- Contenido de Revisores -->
+            <section id="reviewersTab" class="tab-content" role="tabpanel" aria-labelledby="reviewersTabBtn">
+                <div class="form-section">
+                    <h2>Registrar Nuevo Revisor</h2>
+                    <form id="reviewerForm" class="reviewer-form">
+                        <div class="form-group">
+                            <label for="reviewerName">Nombre Completo *</label>
+                            <input 
+                                type="text" 
+                                id="reviewerName" 
+                                name="reviewerName" 
+                                class="form-control" 
+                                placeholder="Ingrese el nombre completo del revisor"
+                                required
+                            >
+                            <span class="error-message" id="reviewerNameError">El nombre es obligatorio</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="reviewerEmail">Correo Electrónico *</label>
+                            <input 
+                                type="email" 
+                                id="reviewerEmail" 
+                                name="reviewerEmail" 
+                                class="form-control" 
+                                placeholder="revisor@ejemplo.com"
+                                required
+                            >
+                            <span class="error-message" id="reviewerEmailError">Ingrese un correo electrónico válido</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="reviewerExpertise">Área de Expertise *</label>
+                            <select id="reviewerExpertise" name="reviewerExpertise" class="form-control" required>
+                                <option value="">Seleccione un área de expertise</option>
+                                <option value="ciencias">Ciencias</option>
+                                <option value="tecnologia">Tecnología</option>
+                                <option value="educacion">Educación</option>
+                                <option value="medicina">Medicina</option>
+                                <option value="ingenieria">Ingeniería</option>
+                                <option value="sociales">Ciencias Sociales</option>
+                                <option value="artes">Artes y Humanidades</option>
+                                <option value="multidisciplinario">Multidisciplinario</option>
+                            </select>
+                            <span class="error-message" id="reviewerExpertiseError">Seleccione un área de expertise</span>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" id="submitReviewerBtn" class="btn btn-primary" disabled>
+                                <span class="btn-text">Registrar Revisor</span>
+                                <span class="btn-loading" style="display: none;">Registrando...</span>
+                            </button>
+                            <button type="reset" class="btn btn-secondary">
+                                Limpiar Formulario
+                            </button>
+                        </div>
+                    </form>
                 </div>
-                <div class="reviewers-count">
-                    <span id="reviewersCount">0</span> revisores encontrados
-                </div>
-                <div id="reviewersTable" class="reviewers-table">
-                    <div class="no-reviewers">
-                        <p>No hay revisores registrados aún. Registra tu primer revisor para comenzar.</p>
+
+                <section id="reviewerSuccessMessage" class="success-message" style="display: none;">
+                    <div class="success-content">
+                        <h3>¡Revisor Registrado Exitosamente!</h3>
+                        <p>El revisor ha sido registrado y está disponible para el proceso de revisión por pares.</p>
+                        <button class="btn btn-primary" id="newReviewerBtn">Registrar Nuevo Revisor</button>
                     </div>
-                </div>
+                </section>
+
+                <section class="reviewers-section">
+                    <h2>Revisores Registrados</h2>
+                    <div class="reviewers-controls">
+                        <div class="search-box">
+                            <input type="text" id="reviewerSearchInput" placeholder="Buscar revisores por nombre, email o expertise..." class="form-control">
+                        </div>
+                        <div class="filter-box">
+                            <select id="expertiseFilter" class="form-control">
+                                <option value="">Todas las áreas</option>
+                                <option value="ciencias">Ciencias</option>
+                                <option value="tecnologia">Tecnología</option>
+                                <option value="educacion">Educación</option>
+                                <option value="medicina">Medicina</option>
+                                <option value="ingenieria">Ingeniería</option>
+                                <option value="sociales">Ciencias Sociales</option>
+                                <option value="artes">Artes y Humanidades</option>
+                                <option value="multidisciplinario">Multidisciplinario</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="reviewers-count">
+                        <span id="reviewersCount">0</span> revisores encontrados
+                    </div>
+                    <div id="reviewersTable" class="reviewers-table">
+                        <div class="no-reviewers">
+                            <p>No hay revisores registrados aún. Registra tu primer revisor para comenzar.</p>
+                        </div>
+                    </div>
+                </section>
             </section>
-        </section>
-    </main>
+        </main>
 
-    <footer class="footer">
-        <p>&copy; 2026 Sistema de Revisión por Pares. Todos los derechos reservados.</p>
-    </footer>
-</div>
+        <footer class="footer">
+            <p>&copy; 2026 Sistema de Revisión por Pares. Todos los derechos reservados.</p>
+        </footer>
+    </div>
 
-<!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     
-<!-- Configuración Firebase -->
-<script src="firebase-config.js"></script>
+    <!-- Configuración Firebase -->
+    <script src="firebase-config.js"></script>
     
-<!-- Script Principal Directo para Funcionalidad Inmediata -->
-<script src="script-working.js" defer></script>
+    <!-- Script Principal Directo para Funcionalidad Inmediata -->
+    <script src="script-working.js" defer></script>
 </body>
 </html>
