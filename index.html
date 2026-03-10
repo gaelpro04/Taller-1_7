@@ -8,14 +8,19 @@
     <!-- SEO Meta Description -->
     <meta name="description" content="Sistema de revisión por pares para registro y gestión de artículos académicos. Trabaja offline y sincroniza cuando hay conexión.">
     
-    <!-- Preload critical CSS -->
+    <!-- Preload crítico para performance -->
     <link rel="preload" href="styles.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link rel="stylesheet" href="styles.css"></noscript>
     
-    <!-- Preload critical fonts -->
+    <!-- Preload de Firebase SDK -->
+    <link rel="preload" href="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js" as="script">
+    <link rel="preload" href="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js" as="script">
+    
+    <!-- Preload de fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     
+    <!-- Manifest para PWA -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4a90e2">
 </head>
@@ -58,24 +63,30 @@
             <p>Registro de Nuevos Artículos</p>
         </header>
 
-        <main class="main-content">
-            <!-- Tabs para navegación -->
-            <div class="tabs-container">
-                <div class="tabs">
-                    <button class="tab-btn active" data-tab="articles">📝 Artículos</button>
-                    <button class="tab-btn" data-tab="reviewers">👥 Revisores</button>
+        <main role="main" class="main-content">
+            <!-- Navegación principal -->
+            <nav aria-label="Navegación principal" class="tabs-container">
+                <div class="tabs" role="tablist">
+                    <button class="tab-btn active" data-tab="articles" role="tab" aria-selected="true" aria-controls="articlesTab" id="articlesTabBtn">📝 Artículos</button>
+                    <button class="tab-btn" data-tab="reviewers" role="tab" aria-selected="false" aria-controls="reviewersTab" id="reviewersTabBtn">👥 Revisores</button>
                 </div>
-            </div>
+            </nav>
 
             <!-- Contenido de Artículos -->
-            <div id="articlesTab" class="tab-content active">
-                <section class="form-section">
-                    <h2>Registrar Nuevo Artículo</h2>
-                    <form id="articleForm" class="article-form">
-                        <div class="form-group">
-                            <label for="title">Título del Artículo *</label>
-                            <input 
-                                type="text" 
+            <section id="articlesTab" class="tab-content active" role="tabpanel" aria-labelledby="articlesTabBtn">
+                <h2>Registrar Nuevo Artículo</h2>
+                <form id="articleForm" class="article-form">
+                    <div class="form-group">
+                        <label for="title">Título del Artículo *</label>
+                        <input 
+                            type="text" 
+                            id="title" 
+                            name="title" 
+                            class="form-control" 
+                            placeholder="Ingrese el título del artículo"
+                            required
+                        >
+                        <span class="error-message" id="titleError">El título es obligatorio</span>
                                 id="title" 
                                 name="title" 
                                 class="form-control" 
