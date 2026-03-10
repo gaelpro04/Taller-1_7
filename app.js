@@ -1,4 +1,4 @@
-// Módulo de formulario de artículos - Versión Funcional con Firebase
+// Módulo de formulario de artículos - Versión Final Funcional
 //Gael Jovani Lopez Garcia 11916199
 const ArticleForm = (() => {
     // Variables globales
@@ -114,25 +114,47 @@ const ArticleForm = (() => {
     const RoleManager = {
         init() {
             this.setupRoleButtons();
-            this.loadSavedRole();
+            // NO cargar rol guardado automáticamente
+            console.log('👤 Esperando selección de rol...');
         },
         
         setupRoleButtons() {
-            const roleButtons = document.querySelectorAll('.role-btn');
-            roleButtons.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const role = btn.dataset.role;
-                    this.selectRole(role);
+            const roleButtons = document.querySelectorAll('.role-card');
+            console.log('🔍 Buscando botones de rol...');
+            console.log('📊 Botones encontrados:', roleButtons.length);
+            
+            if (roleButtons.length === 0) {
+                console.error('❌ No se encontraron botones con clase .role-card');
+                return;
+            }
+            
+            // Agregar event listeners manualmente
+            roleButtons.forEach((btn, index) => {
+                console.log(`🔧 Configurando botón ${index}:`, btn.querySelector('h3').textContent, btn.dataset.role);
+                
+                // Remover listeners anteriores
+                btn.replaceWith(btn.cloneNode(true));
+                
+                // Agregar nuevo listener
+                const newBtn = document.querySelectorAll('.role-card')[index];
+                newBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    console.log('🎯 Botón presionado:', newBtn.dataset.role);
+                    this.selectRole(newBtn.dataset.role);
                 });
             });
+            
+            console.log('✅ Botones configurados');
         },
         
         selectRole(role) {
+            console.log('🎯 Seleccionando rol:', role);
+            
             currentRole = role;
             localStorage.setItem('userRole', role);
             
             // Actualizar UI de botones
-            const roleButtons = document.querySelectorAll('.role-btn');
+            const roleButtons = document.querySelectorAll('.role-card');
             roleButtons.forEach(btn => {
                 btn.classList.remove('active');
                 if (btn.dataset.role === role) {
@@ -141,9 +163,9 @@ const ArticleForm = (() => {
             });
             
             // Mostrar contenido principal
-            const roleSelection = document.querySelector('.role-selection');
-            const mainContent = document.querySelector('.main-content');
-            if (roleSelection) roleSelection.style.display = 'none';
+            const roleSelector = document.getElementById('roleSelector');
+            const mainContent = document.getElementById('mainContent');
+            if (roleSelector) roleSelector.style.display = 'none';
             if (mainContent) mainContent.style.display = 'block';
             
             // Configurar interfaz según rol
@@ -160,14 +182,9 @@ const ArticleForm = (() => {
             }, 100);
         },
         
-        loadSavedRole() {
-            const savedRole = localStorage.getItem('userRole');
-            if (savedRole) {
-                this.selectRole(savedRole);
-            }
-        },
-        
         configureInterface(role) {
+            console.log('⚙️ Configurando interfaz para rol:', role);
+            
             const header = document.querySelector('.header p');
             const tabs = document.querySelector('.tabs');
             const articlesTab = document.getElementById('articlesTab');
@@ -229,6 +246,8 @@ const ArticleForm = (() => {
                     }
                     break;
             }
+            
+            console.log('✅ Interfaz configurada para:', role);
         },
         
         getCurrentRole() {
@@ -512,15 +531,7 @@ const ArticleForm = (() => {
         const file = documentInput.files[0];
         formData.document = file;
         
-        console.log('🔍 Validando documento:', {
-            file: file,
-            name: file?.name,
-            size: file?.size,
-            type: file?.type
-        });
-        
         if (!file) {
-            console.log('❌ No hay archivo seleccionado');
             showError(documentInput, documentError);
             return false;
         }
@@ -529,20 +540,17 @@ const ArticleForm = (() => {
         const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'];
         
         if (file.size > maxSize) {
-            console.log('❌ Archivo demasiado grande:', file.size, '>', maxSize);
             documentError.textContent = 'El documento no debe exceder los 10MB';
             showError(documentInput, documentError);
             return false;
         }
         
         if (!allowedTypes.includes(file.type)) {
-            console.log('❌ Tipo no permitido:', file.type);
             documentError.textContent = 'Formatos permitidos: PDF, DOC, DOCX, TXT';
             showError(documentInput, documentError);
             return false;
         }
         
-        console.log('✅ Documento válido');
         hideError(documentInput, documentError);
         return true;
     };
@@ -554,18 +562,7 @@ const ArticleForm = (() => {
         const isEmailValid = validateEmail();
         const isDocumentValid = validateDocument();
         
-        console.log('🔍 Validaciones:', {
-            title: isTitleValid,
-            summary: isSummaryValid,
-            author: isAuthorValid,
-            email: isEmailValid,
-            document: isDocumentValid
-        });
-        
-        const allValid = isTitleValid && isSummaryValid && isAuthorValid && isEmailValid && isDocumentValid;
-        submitBtn.disabled = !allValid;
-        
-        console.log('🎯 Botón:', allValid ? 'HABILITADO' : 'DESHABILITADO');
+        submitBtn.disabled = !(isTitleValid && isSummaryValid && isAuthorValid && isEmailValid && isDocumentValid);
     };
     
     const clearForm = () => {
@@ -603,19 +600,8 @@ const ArticleForm = (() => {
     };
     
     // Manejo de envío del formulario
-    let isSubmitting = false; // Bandera para prevenir múltiples envíos
-    
     const handleArticleSubmit = async (event) => {
         event.preventDefault();
-        
-        // Prevenir múltiples envíos
-        if (isSubmitting) {
-            console.log('⏳ Ya se está procesando un envío...');
-            return;
-        }
-        
-        isSubmitting = true;
-        console.log('🚀 Iniciando envío de artículo...');
         
         const isTitleValid = validateTitle();
         const isSummaryValid = validateSummary();
@@ -624,13 +610,8 @@ const ArticleForm = (() => {
         const isDocumentValid = validateDocument();
         
         if (!isTitleValid || !isSummaryValid || !isAuthorValid || !isEmailValid || !isDocumentValid) {
-            isSubmitting = false;
             return;
         }
-        
-        // Deshabilitar botón durante envío
-        submitBtn.disabled = true;
-        submitBtn.querySelector('.btn-text').textContent = 'Guardando...';
         
         const newArticle = {
             id: currentEditingId || Date.now().toString(),
@@ -650,24 +631,17 @@ const ArticleForm = (() => {
         };
         
         try {
-            console.log('📝 Guardando artículo en Firebase:', newArticle);
             await storage.save(newArticle);
             articles.unshift(newArticle);
             
-            console.log('✅ Artículo guardado exitosamente');
+            console.log('Artículo guardado:', newArticle);
             filterArticles();
             
             showSuccessMessage();
             clearForm();
         } catch (error) {
-            console.error('❌ Error al guardar artículo:', error);
+            console.error('Error al guardar artículo:', error);
             showErrorMessage('Error al guardar el artículo. Por favor, inténtelo nuevamente.');
-        } finally {
-            // Restaurar estado
-            isSubmitting = false;
-            submitBtn.disabled = false;
-            submitBtn.querySelector('.btn-text').textContent = 'Registrar Artículo';
-            updateSubmitButton();
         }
     };
     
@@ -788,9 +762,6 @@ const ArticleForm = (() => {
                         <button class="btn btn-small btn-info" onclick="assignReviewer('${article.id}')">
                             ${hasReviewer ? 'Cambiar Revisor' : 'Asignar Revisor'}
                         </button>
-                        <button class="btn btn-small btn-danger" onclick="deleteArticle('${article.id}')">
-                            🗑️ Eliminar Artículo
-                        </button>
                     ` : ''}
                     ${isReviewer ? `
                         <button class="btn btn-small btn-success" onclick="reviewArticle('${article.id}')">
@@ -892,35 +863,16 @@ const ArticleForm = (() => {
     
     // Configurar event listeners
     const setupEventListeners = () => {
-        console.log('🔧 Configurando event listeners...');
-        
         // Event listeners para formulario de artículos
         if (form) {
-            console.log('✅ Formulario encontrado');
             form.addEventListener('submit', handleArticleSubmit);
-        } else {
-            console.error('❌ Formulario no encontrado');
-        }
-        
-        if (submitBtn) {
-            console.log('✅ Botón submit encontrado');
-            submitBtn.addEventListener('click', () => {
-                console.log('🎯 Botón presionado manualmente');
-                if (form) form.dispatchEvent(new Event('submit'));
-            });
-        } else {
-            console.error('❌ Botón submit no encontrado');
         }
         
         if (titleInput) {
-            console.log('✅ Input título encontrado');
             titleInput.addEventListener('input', () => {
-                console.log('📝 Título cambiado:', titleInput.value);
                 validateTitle();
                 updateSubmitButton();
             });
-        } else {
-            console.error('❌ Input título no encontrado');
         }
         
         if (summaryInput) {
@@ -946,13 +898,7 @@ const ArticleForm = (() => {
         }
         
         if (documentInput) {
-            documentInput.addEventListener('change', () => {
-                console.log('📁 Archivo seleccionado:', documentInput.files[0]?.name);
-                validateDocument();
-                updateSubmitButton();
-            });
-        } else {
-            console.error('❌ Input documento no encontrado');
+            documentInput.addEventListener('change', validateDocument);
         }
         
         if (searchInput) {
@@ -1102,111 +1048,6 @@ const ArticleForm = (() => {
         }
     };
     
-    // Seleccionar rol
-    const selectRole = (role) => {
-        console.log('🎯 Seleccionando rol:', role);
-        
-        currentRole = role;
-        localStorage.setItem('userRole', role);
-        
-        // Actualizar UI de botones
-        const roleButtons = document.querySelectorAll('.role-card');
-        roleButtons.forEach(btn => {
-            btn.classList.remove('active');
-            if (btn.dataset.role === role) {
-                btn.classList.add('active');
-            }
-        });
-        
-        // Mostrar contenido principal
-        const roleSelector = document.getElementById('roleSelector');
-        const mainContent = document.getElementById('mainContent');
-        if (roleSelector) roleSelector.style.display = 'none';
-        if (mainContent) mainContent.style.display = 'block';
-        
-        // Configurar interfaz según rol
-        configureInterface(role);
-        
-        // Cargar datos después de un pequeño delay
-        setTimeout(() => {
-            initializeElements();
-            setupEventListeners();
-            updateSubmitButton();
-            networkMonitor.updateStatus();
-            loadArticlesFromStorage();
-            loadReviewersFromStorage();
-        }, 100);
-    };
-    
-    // Configurar interfaz según rol
-    const configureInterface = (role) => {
-        console.log('⚙️ Configurando interfaz para rol:', role);
-        
-        const header = document.querySelector('.header p');
-        const tabs = document.querySelector('.tabs');
-        const articlesTab = document.getElementById('articlesTab');
-        const reviewersTab = document.getElementById('reviewersTab');
-        
-        switch(role) {
-            case 'author':
-                if (header) header.textContent = 'Panel del Autor';
-                if (tabs) tabs.style.display = 'none';
-                if (reviewersTab) reviewersTab.style.display = 'none';
-                if (articlesTab) articlesTab.style.display = 'block';
-                const formSection = document.querySelector('.form-section');
-                if (formSection) {
-                    formSection.style.display = 'block';
-                }
-                const newArticleBtn = document.getElementById('newArticleBtn');
-                if (newArticleBtn) {
-                    newArticleBtn.style.display = 'block';
-                }
-                break;
-                
-            case 'editor':
-                if (header) header.textContent = 'Panel del Editor';
-                if (tabs) tabs.style.display = 'flex';
-                if (articlesTab) articlesTab.style.display = 'block';
-                if (reviewersTab) reviewersTab.style.display = 'block';
-                const formSectionEditor = document.querySelector('.form-section');
-                if (formSectionEditor) {
-                    formSectionEditor.style.display = 'none';
-                }
-                const newArticleBtnEditor = document.getElementById('newArticleBtn');
-                if (newArticleBtnEditor) {
-                    newArticleBtnEditor.style.display = 'none';
-                }
-                break;
-                
-            case 'reviewer':
-                if (header) header.textContent = 'Panel del Revisor';
-                if (tabs) tabs.style.display = 'none';
-                if (reviewersTab) reviewersTab.style.display = 'none';
-                if (articlesTab) {
-                    articlesTab.style.display = 'block';
-                    const formSection = document.querySelector('.form-section');
-                    if (formSection) {
-                        formSection.style.display = 'none';
-                    }
-                    const newArticleBtn = document.getElementById('newArticleBtn');
-                    if (newArticleBtn) {
-                        newArticleBtn.style.display = 'none';
-                    }
-                    if (articlesTable) {
-                        articlesTable.innerHTML = `
-                            <div class="reviewer-welcome">
-                                <h3>📋 Artículos Asignados para Revisión</h3>
-                                <p>Aquí se muestran todos los artículos con revisor asignado.</p>
-                            </div>
-                        `;
-                    }
-                }
-                break;
-        }
-        
-        console.log('✅ Interfaz configurada para:', role);
-    };
-    
     // Inicialización principal
     const init = async () => {
         console.log('🚀 Inicializando aplicación...');
@@ -1227,36 +1068,8 @@ const ArticleForm = (() => {
             console.log('⚠️ Firebase no disponible, usando IndexedDB local');
         }
         
-        // Test básico de botones
-        console.log('🔍 Buscando botones de rol...');
-        const roleButtons = document.querySelectorAll('.role-card');
-        console.log('📊 Botones encontrados:', roleButtons.length);
-        
-        if (roleButtons.length === 0) {
-            console.error('❌ No se encontraron botones con clase .role-card');
-            return;
-        }
-        
-        // Agregar event listeners manualmente
-        roleButtons.forEach((btn, index) => {
-            console.log(`🔧 Configurando botón ${index}:`, btn.querySelector('h3').textContent, btn.dataset.role);
-            
-            // Remover listeners anteriores
-            btn.replaceWith(btn.cloneNode(true));
-            
-            // Agregar nuevo listener
-            const newBtn = document.querySelectorAll('.role-card')[index];
-            newBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                console.log('🎯 Botón presionado:', newBtn.dataset.role);
-                selectRole(newBtn.dataset.role);
-            });
-        });
-        
-        console.log('✅ Botones configurados');
-        
-        // NO cargar rol guardado automáticamente - esperar a que el usuario presione un botón
-        console.log('� Esperando que el usuario seleccione un rol...');
+        // Inicializar sistema de roles
+        RoleManager.init();
     };
     
     // Inicializar cuando el DOM esté listo
@@ -1289,101 +1102,23 @@ const ArticleForm = (() => {
         console.log('Editando revisor:', id);
     };
     window.deleteReviewer = (id) => {
-        if (confirm('¿Estás seguro de que deseas eliminar este revisor?\n\n⚠️ Esto también eliminará todas las asignaciones de artículos a este revisor.')) {
-            console.log('🗑️ Eliminando revisor:', id);
-            
-            // Primero, eliminar asignaciones de artículos
-            const reviewerName = reviewers.find(r => r.id === id)?.name;
-            if (reviewerName) {
-                console.log('🔍 Buscando artículos asignados a:', reviewerName);
-                
-                // Actualizar artículos que tenían este revisor asignado
-                const articlesToUpdate = articles.filter(article => article.assignedReviewer === reviewerName);
-                
-                if (articlesToUpdate.length > 0) {
-                    console.log(`📝 Se eliminarán ${articlesToUpdate.length} asignaciones de artículos`);
-                    
-                    // Eliminar asignaciones y actualizar en Firebase
-                    Promise.all(articlesToUpdate.map(article => {
-                        // Eliminar campo de asignación
-                        delete article.assignedReviewer;
-                        delete article.assignedDate;
-                        
-                        console.log('🔄 Actualizando artículo sin revisor:', article.title);
-                        return storage.save(article);
-                    }))
-                    .then(() => {
-                        console.log('✅ Asignaciones eliminadas de Firebase');
-                    })
-                    .catch(error => {
-                        console.error('❌ Error eliminando asignaciones:', error);
-                    });
-                }
-            }
-            
-            // Luego, eliminar el revisor
-            storage.deleteReviewer(id)
-                .then(() => {
-                    console.log('✅ Revisor eliminado de Firebase');
-                    // Eliminar del array local
-                    reviewers = reviewers.filter(r => r.id !== id);
-                    filterReviewers();
-                    
-                    // Actualizar lista de artículos
-                    setTimeout(() => {
-                        filterArticles();
-                        showSuccessMessage(`Revisor "${reviewerName}" eliminado exitosamente.\n${articlesToUpdate.length > 0 ? `Se eliminaron ${articlesToUpdate.length} asignaciones de artículos.` : ''}`);
-                    }, 500);
-                })
-                .catch(error => {
-                    console.error('❌ Error eliminando revisor:', error);
-                    showErrorMessage('Error al eliminar revisor. Por favor, inténtelo nuevamente.');
-                });
+        if (confirm('¿Estás seguro de que deseas eliminar este revisor?')) {
+            console.log('Eliminando revisor:', id);
+            reviewers = reviewers.filter(r => r.id !== id);
+            filterReviewers();
         }
     };
-    window.deleteArticle = (id) => {
-        const article = articles.find(a => a.id === id);
-        if (!article) {
-            console.error('❌ Artículo no encontrado:', id);
-            return;
-        }
-        
-        let confirmMessage = '¿Estás seguro de que deseas eliminar este artículo?';
-        
-        // Si el artículo tiene un revisor asignado que ya no existe
-        if (article.assignedReviewer) {
-            const reviewerExists = reviewers.some(r => r.name === article.assignedReviewer);
-            if (!reviewerExists) {
-                confirmMessage += '\n\n⚠️ Este artículo tiene un revisor asignado que ya no existe.\nSe recomienda eliminar este artículo para mantener la consistencia de los datos.';
+    window.ArticleForm = {
+        init,
+        submitArticle: handleArticleSubmit,
+        clearForm,
+        filterArticles,
+        deleteArticle: (id) => {
+            if (confirm('¿Estás seguro de que deseas eliminar este artículo?')) {
+                console.log('Eliminando artículo:', id);
+                articles = articles.filter(a => a.id !== id);
+                filterArticles();
             }
-        }
-        
-        if (confirm(confirmMessage)) {
-            console.log('🗑️ Eliminando artículo:', id);
-            console.log('📋 Artículo a eliminar:', article);
-            
-            // Eliminar de Firebase
-            storage.delete(id)
-                .then(() => {
-                    console.log('✅ Artículo eliminado de Firebase');
-                    // Eliminar del array local
-                    articles = articles.filter(a => a.id !== id);
-                    filterArticles();
-                    
-                    let successMessage = 'Artículo eliminado exitosamente';
-                    if (article.assignedReviewer) {
-                        const reviewerExists = reviewers.some(r => r.name === article.assignedReviewer);
-                        if (!reviewerExists) {
-                            successMessage += '\n\n✅ Se eliminó un artículo con revisor asignado que ya no existe.';
-                        }
-                    }
-                    
-                    showSuccessMessage(successMessage);
-                })
-                .catch(error => {
-                    console.error('❌ Error eliminando artículo:', error);
-                    showErrorMessage('Error al eliminar artículo. Por favor, inténtelo nuevamente.');
-                });
         }
     };
     
