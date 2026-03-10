@@ -341,22 +341,7 @@
     <!-- Configuración Firebase -->
     <script src="firebase-config.js"></script>
     
-    <!-- Script con Lazy Loading para Performance -->
-    <script>
-        // Lazy load del script principal
-        function loadMainScript() {
-            const script = document.createElement('script');
-            script.src = 'script-working.js';
-            script.defer = true;
-            document.body.appendChild(script);
-        }
-        
-        // Cargar script después de que la página esté lista
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', loadMainScript);
-        } else {
-            loadMainScript();
-        }
-    </script>
+    <!-- Script Principal Directo para Funcionalidad Inmediata -->
+    <script src="script-working.js" defer></script>
 </body>
 </html>
