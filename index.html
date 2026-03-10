@@ -75,8 +75,9 @@
             <!-- Contenido de Artículos -->
             <section id="articlesTab" class="tab-content active" role="tabpanel" aria-labelledby="articlesTabBtn">
                 <h2>Registrar Nuevo Artículo</h2>
-                <form id="articleForm" class="article-form">
-                    <div class="form-group">
+                <div class="form-section">
+                    <form id="articleForm" class="article-form">
+                        <div class="form-group">
                             <label for="title">Título del Artículo *</label>
                             <input 
                                 type="text" 
@@ -218,21 +219,27 @@
                     <div id="articlesTable" class="articles-table">
                         <div class="no-articles">
                             <p>No hay artículos registrados aún. Registra tu primer artículo para comenzar.</p>
-                        </div>
                     </div>
-                </section>
-            </div>
+                </div>
+            </section>
+        </div>
 
-            <!-- Contenido de Revisores -->
-            <div id="reviewersTab" class="tab-content">
-                <section class="form-section">
-                    <h2>Registrar Nuevo Revisor</h2>
-                    <form id="reviewerForm" class="reviewer-form">
-                        <div class="form-group">
-                            <label for="reviewerName">Nombre Completo *</label>
-                            <input 
-                                type="text" 
-                                id="reviewerName" 
+        <!-- Contenido de Revisores -->
+        <section id="reviewersTab" class="tab-content" role="tabpanel" aria-labelledby="reviewersTabBtn">
+            <div class="form-section">
+                <h2>Registrar Nuevo Revisor</h2>
+                <form id="reviewerForm" class="reviewer-form">
+                    <div class="form-group">
+                        <label for="reviewerName">Nombre Completo *</label>
+                        <input 
+                            type="text" 
+                            id="reviewerName" 
+                            name="reviewerName" 
+                            class="form-control" 
+                            placeholder="Ingrese el nombre completo del revisor"
+                            required
+                        >
+                        <span class="error-message" id="reviewerNameError">El nombre es obligatorio</span>
                                 name="reviewerName" 
                                 class="form-control" 
                                 placeholder="Ingrese el nombre completo del revisor"
@@ -334,7 +341,7 @@
     <!-- Configuración Firebase -->
     <script src="firebase-config.js"></script>
     
-    <!-- Script Actual (con debug) -->
+    <!-- Script Original (con debug) -->
     <script src="script-working.js" defer></script>
 </body>
 </html>
