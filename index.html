@@ -63,7 +63,7 @@
             <p>Registro de Nuevos Artículos</p>
         </header>
 
-        <main role="main" class="main-content">
+        <main class="main-content">
             <!-- Navegación principal -->
             <nav aria-label="Navegación principal" class="tabs-container">
                 <div class="tabs" role="tablist">
@@ -341,7 +341,22 @@
     <!-- Configuración Firebase -->
     <script src="firebase-config.js"></script>
     
-    <!-- Script Original (con debug) -->
-    <script src="script-working.js" defer></script>
+    <!-- Script con Lazy Loading para Performance -->
+    <script>
+        // Lazy load del script principal
+        function loadMainScript() {
+            const script = document.createElement('script');
+            script.src = 'script-working.js';
+            script.defer = true;
+            document.body.appendChild(script);
+        }
+        
+        // Cargar script después de que la página esté lista
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', loadMainScript);
+        } else {
+            loadMainScript();
+        }
+    </script>
 </body>
 </html>
